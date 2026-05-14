@@ -39,7 +39,5 @@ public class Payment {
     @Column(name = "amount")
     private BigDecimal amount;
 
-    @NotNull(message = "Order number cannot be null")
-    @Column(name = "orderNumber")
-    private Integer orderNumber;
+
 }
