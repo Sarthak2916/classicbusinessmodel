@@ -40,7 +40,11 @@ public class Office {
     @Size(max = 50, message = "Address Line 1 must not exceed 50 characters")
     private String addressLine1;
 
-     @Column(name = "state", length = 50)
+    @Column(name = "addressLine2", length = 50)
+    @Size(max = 50, message = "Address Line 2 must not exceed 50 characters")
+    private String addressLine2;              // optional — nullable in DB
+
+    @Column(name = "state", length = 50)
     @Size(max = 50, message = "State must not exceed 50 characters")
     private String state;                     // optional — nullable in DB
 
@@ -48,6 +52,7 @@ public class Office {
     @NotBlank(message = "Country is required")
     @Size(max = 50, message = "Country must not exceed 50 characters")
     private String country;
+
 
     @Column(name = "postalCode", nullable = false, length = 15)
     @NotBlank(message = "Postal code is required")
