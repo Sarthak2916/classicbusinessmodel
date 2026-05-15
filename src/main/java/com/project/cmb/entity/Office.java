@@ -68,7 +68,6 @@ public class Office {
     )
     private String territory;
 
-    // Reverse side of Employee.office — no DB column, navigation only
     @OneToMany(mappedBy = "office", fetch = FetchType.LAZY)
     private List<Employee> employees;
 }
