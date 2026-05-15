@@ -1,11 +1,13 @@
 package com.project.cmb.service;
 
+import com.project.cmb.entity.Order;
 import com.project.cmb.entity.Payment;
 import com.project.cmb.repo.*;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -14,40 +16,33 @@ import java.util.stream.Collectors;
 public class DashBoardService {
 
     private final EmployeeRepo employeeRepo;
+    private final CustomerRepo customerRepo;
     private final OrderRepo orderRepo;
     private final ProductRepo productRepo;
     private final PaymentRepo paymentRepo;
-    private final CustomerRepo customerRepo;
 
-    public long getEmployeesCount(){
-        return employeeRepo.count();
-    }
+    public long getEmployeesCount()  { return employeeRepo.count(); }
+    public long getCustomersCount()  { return customerRepo.count(); }
+    public long getOrdersCount()     { return orderRepo.count(); }
+    public long getProductsCount()   { return productRepo.count(); }
+    public long getPaymentsCount()   { return paymentRepo.count(); }
 
-    public long getCustomersCount(){
-        return customerRepo.count();
-    }
-
-    public long getOrdersCount(){
-        return orderRepo.count();
-    }
-
-    public long getProductsCount(){
-        return productRepo.count();
-    }
-
-    public long getPaymentsCount(){
-        return paymentRepo.count();
-    }
-
-    public BigDecimal getTotalSalesAmount(){
+    public BigDecimal getTotalSalesAmount() {
         return paymentRepo.findAll()
                 .stream()
                 .map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public Map<String, Long> getOrdersPerMonth(){
+    public List<Order> getRecentOrders() {
+        return orderRepo.findTop5ByOrderByOrderDateDesc();
+    }
 
+    public long getPendingOrdersCount() {
+        return orderRepo.countByStatus("In Process");
+    }
+
+    public Map<String, Long> getOrdersPerMonth() {
         return orderRepo.findAll()
                 .stream()
                 .collect(Collectors.groupingBy(
@@ -55,5 +50,4 @@ public class DashBoardService {
                         Collectors.counting()
                 ));
     }
-
 }

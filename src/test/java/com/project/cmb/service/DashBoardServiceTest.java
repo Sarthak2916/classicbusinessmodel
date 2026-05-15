@@ -25,107 +25,117 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DashBoardServiceTest {
 
-    @Mock
-    private EmployeeRepo employeeRepo;
-
-    @Mock
-    private OrderRepo orderRepo;
-
-    @Mock
-    private ProductRepo productRepo;
-
-    @Mock
-    private PaymentRepo paymentRepo;
-
-    @Mock
-    private CustomerRepo customerRepo;
+    @Mock private EmployeeRepo employeeRepo;
+    @Mock private CustomerRepo customerRepo;
+    @Mock private OrderRepo orderRepo;
+    @Mock private ProductRepo productRepo;
+    @Mock private PaymentRepo paymentRepo;
 
     @InjectMocks
     private DashBoardService dashBoardService;
 
+    // --- getEmployeesCount ---
+
     @Test
-    void getEmployeesCount_shouldReturnEmployeeRepositoryCount() {
+    void getEmployeesCount_shouldReturnCount() {
         when(employeeRepo.count()).thenReturn(5L);
-
-        long result = dashBoardService.getEmployeesCount();
-
-        assertThat(result).isEqualTo(5L);
+        assertThat(dashBoardService.getEmployeesCount()).isEqualTo(5L);
         verify(employeeRepo).count();
     }
 
+    // --- getCustomersCount ---
+
     @Test
-    void getCustomersCount_shouldReturnCustomerRepositoryCount() {
-        when(customerRepo.count()).thenReturn(7L);
-
-        long result = dashBoardService.getCustomersCount();
-
-        assertThat(result).isEqualTo(7L);
+    void getCustomersCount_shouldReturnCount() {
+        when(customerRepo.count()).thenReturn(10L);
+        assertThat(dashBoardService.getCustomersCount()).isEqualTo(10L);
         verify(customerRepo).count();
     }
 
+    // --- getOrdersCount ---
+
     @Test
-    void getOrdersCount_shouldReturnOrderRepositoryCount() {
+    void getOrdersCount_shouldReturnCount() {
         when(orderRepo.count()).thenReturn(12L);
-
-        long result = dashBoardService.getOrdersCount();
-
-        assertThat(result).isEqualTo(12L);
+        assertThat(dashBoardService.getOrdersCount()).isEqualTo(12L);
         verify(orderRepo).count();
     }
 
+    // --- getProductsCount ---
+
     @Test
-    void getProductsCount_shouldReturnProductRepositoryCount() {
+    void getProductsCount_shouldReturnCount() {
         when(productRepo.count()).thenReturn(8L);
-
-        long result = dashBoardService.getProductsCount();
-
-        assertThat(result).isEqualTo(8L);
+        assertThat(dashBoardService.getProductsCount()).isEqualTo(8L);
         verify(productRepo).count();
     }
 
+    // --- getPaymentsCount ---
+
     @Test
-    void getPaymentsCount_shouldReturnPaymentRepositoryCount() {
-        when(paymentRepo.count()).thenReturn(15L);
-
-        long result = dashBoardService.getPaymentsCount();
-
-        assertThat(result).isEqualTo(15L);
+    void getPaymentsCount_shouldReturnCount() {
+        when(paymentRepo.count()).thenReturn(20L);
+        assertThat(dashBoardService.getPaymentsCount()).isEqualTo(20L);
         verify(paymentRepo).count();
     }
 
+    // --- getTotalSalesAmount ---
+
     @Test
-    void getTotalSalesAmount_shouldReturnSumOfPaymentAmounts() {
-        Payment firstPayment = buildPayment("CHK001", new BigDecimal("120.50"));
-        Payment secondPayment = buildPayment("CHK002", new BigDecimal("79.25"));
-        Payment thirdPayment = buildPayment("CHK003", new BigDecimal("300.00"));
+    void getTotalSalesAmount_shouldReturnSumOfAllPayments() {
+        Payment p1 = new Payment();
+        p1.setAmount(new BigDecimal("1500.00"));
 
-        when(paymentRepo.findAll())
-                .thenReturn(List.of(firstPayment, secondPayment, thirdPayment));
+        Payment p2 = new Payment();
+        p2.setAmount(new BigDecimal("2500.00"));
 
-        BigDecimal result = dashBoardService.getTotalSalesAmount();
+        when(paymentRepo.findAll()).thenReturn(List.of(p1, p2));
 
-        assertThat(result).isEqualByComparingTo(new BigDecimal("499.75"));
+        assertThat(dashBoardService.getTotalSalesAmount())
+                .isEqualByComparingTo("4000.00");
         verify(paymentRepo).findAll();
     }
 
     @Test
-    void getTotalSalesAmount_whenNoPayments_shouldReturnZero() {
+    void getTotalSalesAmount_noPayments_shouldReturnZero() {
         when(paymentRepo.findAll()).thenReturn(List.of());
-
-        BigDecimal result = dashBoardService.getTotalSalesAmount();
-
-        assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
-        verify(paymentRepo).findAll();
+        assertThat(dashBoardService.getTotalSalesAmount())
+                .isEqualByComparingTo(BigDecimal.ZERO);
     }
 
-    @Test
-    void getOrdersPerMonth_shouldGroupOrdersByMonthName() {
-        Order januaryOrder = buildOrder(101, LocalDate.of(2024, 1, 15));
-        Order anotherJanuaryOrder = buildOrder(102, LocalDate.of(2024, 1, 28));
-        Order marchOrder = buildOrder(103, LocalDate.of(2024, 3, 5));
+    // --- getRecentOrders ---
 
-        when(orderRepo.findAll())
-                .thenReturn(List.of(januaryOrder, anotherJanuaryOrder, marchOrder));
+    @Test
+    void getRecentOrders_shouldReturnTop5() {
+        Order o1 = buildOrder(90001, LocalDate.of(2024, 3, 1));
+        Order o2 = buildOrder(90002, LocalDate.of(2024, 2, 1));
+
+        when(orderRepo.findTop5ByOrderByOrderDateDesc()).thenReturn(List.of(o1, o2));
+
+        List<Order> result = dashBoardService.getRecentOrders();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getOrderNumber()).isEqualTo(90001);
+        verify(orderRepo).findTop5ByOrderByOrderDateDesc();
+    }
+
+    // --- getPendingOrdersCount ---
+
+    @Test
+    void getPendingOrdersCount_shouldReturnCountByStatus() {
+        when(orderRepo.countByStatus("In Process")).thenReturn(3L);
+        assertThat(dashBoardService.getPendingOrdersCount()).isEqualTo(3L);
+        verify(orderRepo).countByStatus("In Process");
+    }
+
+    // --- getOrdersPerMonth ---
+
+    @Test
+    void getOrdersPerMonth_shouldGroupByMonth() {
+        Order o1 = buildOrder(101, LocalDate.of(2024, 1, 15));
+        Order o2 = buildOrder(102, LocalDate.of(2024, 1, 28));
+        Order o3 = buildOrder(103, LocalDate.of(2024, 3, 5));
+
+        when(orderRepo.findAll()).thenReturn(List.of(o1, o2, o3));
 
         Map<String, Long> result = dashBoardService.getOrdersPerMonth();
 
@@ -137,33 +147,21 @@ class DashBoardServiceTest {
     }
 
     @Test
-    void getOrdersPerMonth_whenNoOrders_shouldReturnEmptyMap() {
+    void getOrdersPerMonth_noOrders_shouldReturnEmptyMap() {
         when(orderRepo.findAll()).thenReturn(List.of());
-
-        Map<String, Long> result = dashBoardService.getOrdersPerMonth();
-
-        assertThat(result).isEmpty();
+        assertThat(dashBoardService.getOrdersPerMonth()).isEmpty();
         verify(orderRepo).findAll();
     }
 
-    private Order buildOrder(Integer orderNumber, LocalDate orderDate) {
-        return new Order(
-                orderNumber,
-                orderDate,
-                orderDate.plusDays(7),
-                null,
-                "In Process",
-                null,
-                100
-        );
-    }
+    // --- helper ---
 
-    private Payment buildPayment(String checkNumber, BigDecimal amount) {
-        return new Payment(
-                100,
-                checkNumber,
-                LocalDate.of(2024, 1, 15),
-                amount
-        );
+    private Order buildOrder(Integer orderNumber, LocalDate orderDate) {
+        Order o = new Order();
+        o.setOrderNumber(orderNumber);
+        o.setOrderDate(orderDate);
+        o.setRequiredDate(orderDate.plusDays(7));
+        o.setStatus("In Process");
+        // customer left null — dashboard tests don't need it
+        return o;
     }
 }
