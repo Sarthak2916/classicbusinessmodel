@@ -1,7 +1,9 @@
 package com.project.cmb.repository;
 
+import com.project.cmb.entity.Order;
 import com.project.cmb.entity.Payment;
 import com.project.cmb.entity.PaymentId;
+import com.project.cmb.repo.OrderRepo;
 import com.project.cmb.repo.PaymentRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,9 @@ class PaymentRepoTest {
     @Autowired
     private PaymentRepo paymentRepo;
 
+    @Autowired
+    private OrderRepo orderRepo;
+
     // Use existing customerNumbers from classicmodels (103, 112 exist)
     // Use unique check numbers prefixed with TEST_ to avoid collision
     private final PaymentId id1 = new PaymentId(103, "TEST_CHK001");
@@ -31,6 +36,32 @@ class PaymentRepoTest {
 
     @BeforeEach
     void setup() {
+        // Must insert parent orders first — FK constraint on payments.orderNumber
+        Order o1 = new Order();
+        o1.setOrderNumber(90001);
+        o1.setOrderDate(LocalDate.of(2024, 1, 1));
+        o1.setRequiredDate(LocalDate.of(2024, 1, 10));
+        o1.setStatus("In Process");
+        o1.setCustomerNumber(103);
+        orderRepo.save(o1);
+
+        Order o2 = new Order();
+        o2.setOrderNumber(90002);
+        o2.setOrderDate(LocalDate.of(2024, 2, 1));
+        o2.setRequiredDate(LocalDate.of(2024, 2, 10));
+        o2.setStatus("In Process");
+        o2.setCustomerNumber(103);
+        orderRepo.save(o2);
+
+        Order o3 = new Order();
+        o3.setOrderNumber(90003);
+        o3.setOrderDate(LocalDate.of(2024, 3, 1));
+        o3.setRequiredDate(LocalDate.of(2024, 3, 10));
+        o3.setStatus("In Process");
+        o3.setCustomerNumber(112);
+        orderRepo.save(o3);
+
+        // Now insert payments
         Payment p1 = new Payment();
         p1.setId(id1);
         p1.setPaymentDate(LocalDate.of(2024, 1, 10));
@@ -85,7 +116,7 @@ class PaymentRepoTest {
         p.setId(newId);
         p.setPaymentDate(LocalDate.of(2024, 4, 1));
         p.setAmount(new BigDecimal("500.00"));
-        p.setOrderNumber(90004);
+        p.setOrderNumber(90003);
         paymentRepo.save(p);
 
         assertThat(paymentRepo.findById(newId)).isPresent();
@@ -99,7 +130,7 @@ class PaymentRepoTest {
         p.setId(newId);
         p.setPaymentDate(LocalDate.of(2024, 5, 1));
         p.setAmount(new BigDecimal("750.00"));
-        p.setOrderNumber(90005);
+        p.setOrderNumber(90001);
         paymentRepo.save(p);
         assertThat(paymentRepo.count()).isEqualTo(countBefore + 1);
     }
