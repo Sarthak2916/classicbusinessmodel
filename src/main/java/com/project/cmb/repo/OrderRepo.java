@@ -21,4 +21,8 @@ public interface OrderRepo extends JpaRepository<Order, Integer> {
     List<Order> findByCustomerNumber(
             @Param("customerNumber") Integer customerNumber
     );
+
+    List<Order> findTop5ByOrderByOrderDateDesc();
+
+    long countByStatus(String inProcess);
 }
