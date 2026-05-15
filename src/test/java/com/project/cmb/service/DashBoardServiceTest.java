@@ -1,8 +1,11 @@
 package com.project.cmb.service;
 
 import com.project.cmb.entity.Order;
+import com.project.cmb.entity.Payment;
+import com.project.cmb.repo.CustomerRepo;
 import com.project.cmb.repo.EmployeeRepo;
 import com.project.cmb.repo.OrderRepo;
+import com.project.cmb.repo.PaymentRepo;
 import com.project.cmb.repo.ProductRepo;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +34,12 @@ class DashBoardServiceTest {
     @Mock
     private ProductRepo productRepo;
 
+    @Mock
+    private PaymentRepo paymentRepo;
+
+    @Mock
+    private CustomerRepo customerRepo;
+
     @InjectMocks
     private DashBoardService dashBoardService;
 
@@ -41,6 +51,16 @@ class DashBoardServiceTest {
 
         assertThat(result).isEqualTo(5L);
         verify(employeeRepo).count();
+    }
+
+    @Test
+    void getCustomersCount_shouldReturnCustomerRepositoryCount() {
+        when(customerRepo.count()).thenReturn(7L);
+
+        long result = dashBoardService.getCustomersCount();
+
+        assertThat(result).isEqualTo(7L);
+        verify(customerRepo).count();
     }
 
     @Test
@@ -61,6 +81,41 @@ class DashBoardServiceTest {
 
         assertThat(result).isEqualTo(8L);
         verify(productRepo).count();
+    }
+
+    @Test
+    void getPaymentsCount_shouldReturnPaymentRepositoryCount() {
+        when(paymentRepo.count()).thenReturn(15L);
+
+        long result = dashBoardService.getPaymentsCount();
+
+        assertThat(result).isEqualTo(15L);
+        verify(paymentRepo).count();
+    }
+
+    @Test
+    void getTotalSalesAmount_shouldReturnSumOfPaymentAmounts() {
+        Payment firstPayment = buildPayment("CHK001", new BigDecimal("120.50"));
+        Payment secondPayment = buildPayment("CHK002", new BigDecimal("79.25"));
+        Payment thirdPayment = buildPayment("CHK003", new BigDecimal("300.00"));
+
+        when(paymentRepo.findAll())
+                .thenReturn(List.of(firstPayment, secondPayment, thirdPayment));
+
+        BigDecimal result = dashBoardService.getTotalSalesAmount();
+
+        assertThat(result).isEqualByComparingTo(new BigDecimal("499.75"));
+        verify(paymentRepo).findAll();
+    }
+
+    @Test
+    void getTotalSalesAmount_whenNoPayments_shouldReturnZero() {
+        when(paymentRepo.findAll()).thenReturn(List.of());
+
+        BigDecimal result = dashBoardService.getTotalSalesAmount();
+
+        assertThat(result).isEqualByComparingTo(BigDecimal.ZERO);
+        verify(paymentRepo).findAll();
     }
 
     @Test
@@ -100,6 +155,15 @@ class DashBoardServiceTest {
                 "In Process",
                 null,
                 100
+        );
+    }
+
+    private Payment buildPayment(String checkNumber, BigDecimal amount) {
+        return new Payment(
+                100,
+                checkNumber,
+                LocalDate.of(2024, 1, 15),
+                amount
         );
     }
 }
