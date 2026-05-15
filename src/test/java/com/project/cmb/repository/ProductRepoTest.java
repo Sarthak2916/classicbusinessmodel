@@ -5,14 +5,12 @@ import com.project.cmb.entity.ProductLine;
 import com.project.cmb.repo.ProductLineRepo;
 import com.project.cmb.repo.ProductRepo;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -29,333 +27,222 @@ class ProductRepoTest {
     @Autowired
     private ProductLineRepo productLineRepo;
 
-    private Product product;
-    private ProductLine productLine;
+    private ProductLine testLine1;
+    private ProductLine testLine2;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
+        testLine1 = new ProductLine();
+        testLine1.setProductLine("Test Line A");
+        testLine1.setTextDescription("Test description A");
+        productLineRepo.save(testLine1);
 
-        productLine = new ProductLine();
-        productLine.setProductLine("Classic Cars");
-        productLine.setTextDescription("Classic Cars Description");
+        testLine2 = new ProductLine();
+        testLine2.setProductLine("Test Line B");
+        testLine2.setTextDescription("Test description B");
+        productLineRepo.save(testLine2);
 
-        productLineRepo.save(productLine);
+        Product p1 = new Product();
+        p1.setProductCode("T_001");
+        p1.setProductName("Test Classic Car One");
+        p1.setProductLine(testLine1);
+        p1.setProductScale("1:10");
+        p1.setProductVendor("Test Vendor A");
+        p1.setProductDescription("A test product");
+        p1.setQuantityInStock((short) 100);
+        p1.setBuyPrice(new BigDecimal("50.00"));
+        p1.setMsrp(new BigDecimal("99.99"));
+        productRepo.save(p1);
 
-        product = new Product();
+        Product p2 = new Product();
+        p2.setProductCode("T_002");
+        p2.setProductName("Test Vintage Bike Two");
+        p2.setProductLine(testLine1);
+        p2.setProductScale("1:12");
+        p2.setProductVendor("Test Vendor B");
+        p2.setProductDescription("Another test product");
+        p2.setQuantityInStock((short) 50);
+        p2.setBuyPrice(new BigDecimal("30.00"));
+        p2.setMsrp(new BigDecimal("59.99"));
+        productRepo.save(p2);
 
-        product.setProductCode("S10_1678");
-        product.setProductName("1969 Harley Davidson Ultimate Chopper");
-        product.setProductLine(productLine);
-        product.setProductScale("1:10");
-        product.setProductVendor("Min Lin Diecast");
-        product.setProductDescription("Test Product Description");
-        product.setQuantityInStock((short) 7933);
-
-        product.setBuyPrice(BigDecimal.valueOf(48.81));
-        product.setMsrp(BigDecimal.valueOf(95.70));
-
-        productRepo.save(product);
+        Product p3 = new Product();
+        p3.setProductCode("T_003");
+        p3.setProductName("Test Plane Three");
+        p3.setProductLine(testLine2);
+        p3.setProductScale("1:18");
+        p3.setProductVendor("Test Vendor C");
+        p3.setProductDescription("Third test product");
+        p3.setQuantityInStock((short) 200);
+        p3.setBuyPrice(new BigDecimal("70.00"));
+        p3.setMsrp(new BigDecimal("129.99"));
+        productRepo.save(p3);
     }
 
-    // =====================================================
-    // BUILT IN METHODS
-    // =====================================================
+    // --- findAll ---
 
     @Test
-    @DisplayName("findAll returns paginated products")
-    void findAll_ReturnsAllProductsPaginated() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findAll(pageable);
-
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent().size())
-                .isGreaterThan(0);
+    void repo_findAll_shouldReturnProducts() {
+        assertThat(productRepo.findAll()).isNotEmpty();
     }
 
-    @Test
-    @DisplayName("findById when exists returns product")
-    void findById_WhenExists_ReturnsProduct() {
-
-        Optional<Product> foundProduct =
-                productRepo.findById("S10_1678");
-
-        assertThat(foundProduct).isPresent();
-
-        assertThat(foundProduct.get().getProductName())
-                .isEqualTo("1969 Harley Davidson Ultimate Chopper");
-    }
+    // --- findById ---
 
     @Test
-    @DisplayName("findById when not exists returns empty")
-    void findById_WhenNotExists_ReturnsEmpty() {
-
-        Optional<Product> foundProduct =
-                productRepo.findById("INVALID_CODE");
-
-        assertThat(foundProduct).isEmpty();
-    }
-
-    @Test
-    @DisplayName("save when valid product saves successfully")
-    void save_WhenValidProduct_SavesSuccessfully() {
-
-        Product newProduct = new Product();
-
-        newProduct.setProductCode("S12_9999");
-        newProduct.setProductName("Ferrari Test Car");
-        newProduct.setProductLine(productLine);
-        newProduct.setProductScale("1:18");
-        newProduct.setProductVendor("AutoArt");
-        newProduct.setProductDescription("Ferrari Description");
-
-        newProduct.setQuantityInStock((short) 150);
-
-        newProduct.setBuyPrice(BigDecimal.valueOf(120.50));
-        newProduct.setMsrp(BigDecimal.valueOf(200.00));
-
-        Product savedProduct =
-                productRepo.save(newProduct);
-
-        assertThat(savedProduct).isNotNull();
-
-        assertThat(savedProduct.getProductCode())
-                .isEqualTo("S12_9999");
+    void repo_findById_shouldReturnProduct() {
+        Optional<Product> result = productRepo.findById("T_001");
+        assertThat(result).isPresent();
+        assertThat(result.get().getProductName()).isEqualTo("Test Classic Car One");
     }
 
     @Test
-    @DisplayName("existsById when exists returns true")
-    void existsById_WhenExists_ReturnsTrue() {
+    void repo_findById_whenNotExists_shouldReturnEmpty() {
+        Optional<Product> result = productRepo.findById("ZZZZZZ");
+        assertThat(result).isEmpty();
+    }
 
-        boolean exists =
-                productRepo.existsById("S10_1678");
+    // --- save ---
 
-        assertThat(exists).isTrue();
+    @Test
+    void repo_save_shouldPersistNewProduct() {
+        Product p = new Product();
+        p.setProductCode("T_004");
+        p.setProductName("Test Ship Four");
+        p.setProductLine(testLine2);
+        p.setProductScale("1:700");
+        p.setProductVendor("Test Vendor D");
+        p.setProductDescription("Fourth test product");
+        p.setQuantityInStock((short) 10);
+        p.setBuyPrice(new BigDecimal("90.00"));
+        p.setMsrp(new BigDecimal("179.99"));
+        productRepo.save(p);
+
+        assertThat(productRepo.findById("T_004")).isPresent();
     }
 
     @Test
-    @DisplayName("existsById when not exists returns false")
-    void existsById_WhenNotExists_ReturnsFalse() {
-
-        boolean exists =
-                productRepo.existsById("INVALID_CODE");
-
-        assertThat(exists).isFalse();
+    void repo_save_shouldIncreaseCount() {
+        long countBefore = productRepo.count();
+        Product p = new Product();
+        p.setProductCode("T_005");
+        p.setProductName("Test Truck Five");
+        p.setProductLine(testLine1);
+        p.setProductScale("1:24");
+        p.setProductVendor("Test Vendor E");
+        p.setProductDescription("Fifth test product");
+        p.setQuantityInStock((short) 75);
+        p.setBuyPrice(new BigDecimal("40.00"));
+        p.setMsrp(new BigDecimal("79.99"));
+        productRepo.save(p);
+        assertThat(productRepo.count()).isEqualTo(countBefore + 1);
     }
 
-    // =====================================================
-    // CUSTOM METHODS
-    // =====================================================
+    // --- update ---
 
     @Test
-    void findByProductName_WhenExists_ReturnsProduct() {
+    void repo_update_buyPrice_shouldModify() {
+        Product p = productRepo.findById("T_001").orElseThrow();
+        p.setBuyPrice(new BigDecimal("55.00"));
+        productRepo.save(p);
 
-        Optional<Product> foundProduct =
-                productRepo.findByProductName(
-                        "1969 Harley Davidson Ultimate Chopper"
-                );
-
-        assertThat(foundProduct).isPresent();
-
-        assertThat(foundProduct.get().getProductCode())
-                .isEqualTo("S10_1678");
-    }
-
-    @Test
-    void findByProductName_WhenNotExists_ReturnsEmpty() {
-
-        Optional<Product> foundProduct =
-                productRepo.findByProductName(
-                        "XYZ_NOT_EXISTING_123"
-                );
-
-        assertThat(foundProduct).isEmpty();
-    }
-
-    // =====================================================
-    // findByProductScale()
-    // =====================================================
-
-    @Test
-    void findByProductScale_WhenExists_ReturnsProducts() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductScale(
-                        "1:10",
-                        pageable
-                );
-
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent())
-                .extracting(Product::getProductCode)
-                .contains("S10_1678");
+        assertThat(productRepo.findById("T_001").orElseThrow().getBuyPrice())
+                .isEqualByComparingTo("55.00");
     }
 
     @Test
-    void findByProductScale_WhenNotExists_ReturnsEmptyPage() {
+    void repo_update_msrp_shouldModify() {
+        Product p = productRepo.findById("T_001").orElseThrow();
+        p.setMsrp(new BigDecimal("109.99"));
+        productRepo.save(p);
 
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductScale(
-                        "XYZ_SCALE_123",
-                        pageable
-                );
-
-        assertThat(products).isEmpty();
-    }
-
-    // =====================================================
-    // findByProductVendor()
-    // =====================================================
-
-    @Test
-    void findByProductVendor_WhenExists_ReturnsProducts() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductVendor(
-                        "Min Lin Diecast",
-                        pageable
-                );
-
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent())
-                .extracting(Product::getProductVendor)
-                .contains("Min Lin Diecast");
+        assertThat(productRepo.findById("T_001").orElseThrow().getMsrp())
+                .isEqualByComparingTo("109.99");
     }
 
     @Test
-    void findByProductVendor_WhenNotExists_ReturnsEmptyPage() {
+    void repo_update_quantity_shouldModify() {
+        Product p = productRepo.findById("T_001").orElseThrow();
+        p.setQuantityInStock((short) 150);
+        productRepo.save(p);
 
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductVendor(
-                        "XYZ_VENDOR_123",
-                        pageable
-                );
-
-        assertThat(products).isEmpty();
-    }
-
-    // =====================================================
-    // findByProductNameContainingIgnoreCase()
-    // =====================================================
-
-    @Test
-    void findByProductNameContainingIgnoreCase_WhenExists_ReturnsProducts() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductNameContainingIgnoreCase(
-                        "Harley",
-                        pageable
-                );
-
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent())
-                .extracting(Product::getProductCode)
-                .contains("S10_1678");
+        assertThat(productRepo.findById("T_001").orElseThrow().getQuantityInStock())
+                .isEqualTo((short) 150);
     }
 
     @Test
-    void findByProductNameContainingIgnoreCase_WhenUpperCase_ReturnsProducts() {
+    void repo_update_shouldNotChangeOtherFields() {
+        Product p = productRepo.findById("T_001").orElseThrow();
+        p.setBuyPrice(new BigDecimal("60.00"));
+        productRepo.save(p);
 
-        Pageable pageable = PageRequest.of(0, 5);
+        Product updated = productRepo.findById("T_001").orElseThrow();
+        assertThat(updated.getProductName()).isEqualTo("Test Classic Car One");
+        assertThat(updated.getProductVendor()).isEqualTo("Test Vendor A");
+    }
 
-        Page<Product> products =
-                productRepo.findByProductNameContainingIgnoreCase(
-                        "HARLEY",
-                        pageable
-                );
+    // --- delete ---
 
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent())
-                .extracting(Product::getProductCode)
-                .contains("S10_1678");
+    @Test
+    void repo_deleteById_shouldRemoveProduct() {
+        productRepo.deleteById("T_003");
+        assertThat(productRepo.findById("T_003")).isEmpty();
     }
 
     @Test
-    void findByProductNameContainingIgnoreCase_WhenNoMatch_ReturnsEmptyPage() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findByProductNameContainingIgnoreCase(
-                        "XYZ_NOT_EXISTING_123",
-                        pageable
-                );
-
-        assertThat(products).isEmpty();
+    void repo_deleteById_shouldDecreaseCount() {
+        long countBefore = productRepo.count();
+        productRepo.deleteById("T_003");
+        assertThat(productRepo.count()).isEqualTo(countBefore - 1);
     }
 
-    // =====================================================
-    // findAllByProductLine()
-    // =====================================================
+    // --- findByProductNameContainingIgnoreCase ---
 
     @Test
-    void findAllByProductLine_WhenExists_ReturnsProducts() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findAllByProductLine(
-                        productLine,
-                        pageable
-                );
-
-        assertThat(products).isNotEmpty();
-
-        assertThat(products.getContent())
-                .extracting(Product::getProductCode)
-                .contains("S10_1678");
+    void repo_findByName_shouldReturnMatch() {
+        Page<Product> result = productRepo
+                .findByProductNameContainingIgnoreCase("classic", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
     }
 
     @Test
-    void findAllByProductLine_WhenPaginationApplied_ReturnsCorrectPage() {
-
-        Pageable pageable = PageRequest.of(0, 1);
-
-        Page<Product> products =
-                productRepo.findAllByProductLine(
-                        productLine,
-                        pageable
-                );
-
-        assertThat(products.getSize())
-                .isEqualTo(1);
+    void repo_findByName_caseInsensitive_shouldWork() {
+        Page<Product> result = productRepo
+                .findByProductNameContainingIgnoreCase("VINTAGE", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
     }
 
     @Test
-    void findAllByProductLine_WhenNoProducts_ReturnsEmptyPage() {
+    void repo_findByName_noMatch_shouldReturnEmpty() {
+        Page<Product> result = productRepo
+                .findByProductNameContainingIgnoreCase("xyzxyzxyz", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
 
-        ProductLine newLine = new ProductLine();
+    @Test
+    void repo_findByProductLine_shouldReturnCorrectProducts() {
+        Page<Product> result = productRepo
+                .findByProductLine_ProductLine("Test Line A", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .allMatch(p -> p.getProductLine().getProductLine().equals("Test Line A")))
+                .isTrue();
+    }
 
-        newLine.setProductLine("XYZ_LINE_123");
-        newLine.setTextDescription("Test Description");
+    @Test
+    void repo_findByProductLine_shouldNotReturnOtherLines() {
+        Page<Product> result = productRepo
+                .findByProductLine_ProductLine("Test Line B", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_003"))).isTrue();
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_001"))).isFalse();
+    }
 
-        productLineRepo.save(newLine);
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<Product> products =
-                productRepo.findAllByProductLine(
-                        newLine,
-                        pageable
-                );
-
-        assertThat(products).isEmpty();
+    @Test
+    void repo_findByProductLine_noMatch_shouldReturnEmpty() {
+        Page<Product> result = productRepo
+                .findByProductLine_ProductLine("Nonexistent Line", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
     }
 }

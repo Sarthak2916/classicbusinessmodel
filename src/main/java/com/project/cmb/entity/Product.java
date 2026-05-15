@@ -23,7 +23,7 @@ public class Product {
     @Column(name = "productName", length = 70, nullable = false)
     private String productName;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "productLine")
     private ProductLine productLine;
 
