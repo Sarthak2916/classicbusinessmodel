@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "offices")
 @Getter
@@ -11,9 +13,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
+@ToString(exclude = "employees")
 public class Office {
-
 
     @Id
     @Column(name = "officeCode", nullable = false, length = 10)
@@ -40,9 +41,13 @@ public class Office {
     @Size(max = 50, message = "Address Line 1 must not exceed 50 characters")
     private String addressLine1;
 
-     @Column(name = "state", length = 50)
+    @Column(name = "addressLine2", length = 50)
+    @Size(max = 50, message = "Address Line 2 must not exceed 50 characters")
+    private String addressLine2;
+
+    @Column(name = "state", length = 50)
     @Size(max = 50, message = "State must not exceed 50 characters")
-    private String state;                     // optional — nullable in DB
+    private String state;
 
     @Column(name = "country", nullable = false, length = 50)
     @NotBlank(message = "Country is required")
@@ -62,4 +67,7 @@ public class Office {
             message = "Territory must be one of: NA, EMEA, APAC, Japan"
     )
     private String territory;
+
+    @OneToMany(mappedBy = "office", fetch = FetchType.LAZY)
+    private List<Employee> employees;
 }

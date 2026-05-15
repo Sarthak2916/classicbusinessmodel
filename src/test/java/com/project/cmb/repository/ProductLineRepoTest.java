@@ -3,15 +3,12 @@ package com.project.cmb.repository;
 import com.project.cmb.entity.ProductLine;
 import com.project.cmb.repo.ProductLineRepo;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,110 +20,91 @@ class ProductLineRepoTest {
     @Autowired
     private ProductLineRepo productLineRepo;
 
-    private ProductLine productLine;
-
     @BeforeEach
-    void setUp() {
+    void setup() {
+        ProductLine pl1 = new ProductLine();
+        pl1.setProductLine("Test Motorcycles");
+        pl1.setTextDescription("Test motorcycle product line");
+        productLineRepo.save(pl1);
 
-        productLine = new ProductLine();
-
-        productLine.setProductLine("Classic Cars");
-        productLine.setTextDescription("Classic Cars Description");
-        productLine.setHtmlDescription("<h1>Classic Cars</h1>");
-
-        productLineRepo.save(productLine);
-    }
-
-    // =====================================================
-    // findAll()
-    // =====================================================
-
-    @Test
-    @DisplayName("findAll returns paginated product lines")
-    void findAll_ReturnsAllProductLinesPaginated() {
-
-        Pageable pageable = PageRequest.of(0, 5);
-
-        Page<ProductLine> productLines =
-                productLineRepo.findAll(pageable);
-
-        assertThat(productLines).isNotEmpty();
-
-        assertThat(productLines.getContent().size())
-                .isGreaterThan(0);
-    }
-
-    // =====================================================
-    // findById()
-    // =====================================================
-
-    @Test
-    @DisplayName("findById when exists returns product line")
-    void findById_WhenExists_ReturnsProductLine() {
-
-        Optional<ProductLine> foundProductLine =
-                productLineRepo.findById("Classic Cars");
-
-        assertThat(foundProductLine).isPresent();
-
-        assertThat(foundProductLine.get().getTextDescription())
-                .isEqualTo("Classic Cars Description");
+        ProductLine pl2 = new ProductLine();
+        pl2.setProductLine("Test Planes");
+        pl2.setTextDescription("Test planes product line");
+        productLineRepo.save(pl2);
     }
 
     @Test
-    @DisplayName("findById when not exists returns empty")
-    void findById_WhenNotExists_ReturnsEmpty() {
-
-        Optional<ProductLine> foundProductLine =
-                productLineRepo.findById("INVALID_PRODUCT_LINE");
-
-        assertThat(foundProductLine).isEmpty();
-    }
-
-    // =====================================================
-    // save()
-    // =====================================================
-
-    @Test
-    @DisplayName("save when valid product line saves successfully")
-    void save_WhenValidProductLine_SavesSuccessfully() {
-
-        ProductLine newProductLine = new ProductLine();
-
-        newProductLine.setProductLine("Motorcycles");
-        newProductLine.setTextDescription("Motorcycles Description");
-        newProductLine.setHtmlDescription("<h1>Motorcycles</h1>");
-
-        ProductLine savedProductLine =
-                productLineRepo.save(newProductLine);
-
-        assertThat(savedProductLine).isNotNull();
-
-        assertThat(savedProductLine.getProductLine())
-                .isEqualTo("Motorcycles");
-    }
-
-    // =====================================================
-    // existsById()
-    // =====================================================
-
-    @Test
-    @DisplayName("existsById when exists returns true")
-    void existsById_WhenExists_ReturnsTrue() {
-
-        boolean exists =
-                productLineRepo.existsById("Classic Cars");
-
-        assertThat(exists).isTrue();
+    void repo_findAll_shouldReturnProductLines() {
+        List<ProductLine> result = productLineRepo.findAll();
+        assertThat(result).isNotEmpty();
     }
 
     @Test
-    @DisplayName("existsById when not exists returns false")
-    void existsById_WhenNotExists_ReturnsFalse() {
+    void repo_findById_shouldReturnProductLine() {
+        Optional<ProductLine> result = productLineRepo.findById("Test Motorcycles");
+        assertThat(result).isPresent();
+        assertThat(result.get().getTextDescription())
+                .isEqualTo("Test motorcycle product line");
+    }
 
-        boolean exists =
-                productLineRepo.existsById("INVALID_PRODUCT_LINE");
+    @Test
+    void repo_findById_whenNotExists_shouldReturnEmpty() {
+        Optional<ProductLine> result = productLineRepo.findById("Nonexistent Line");
+        assertThat(result).isEmpty();
+    }
 
-        assertThat(exists).isFalse();
+    @Test
+    void repo_save_shouldPersistNewProductLine() {
+        ProductLine pl = new ProductLine();
+        pl.setProductLine("Test Ships");
+        pl.setTextDescription("Test ships product line");
+        productLineRepo.save(pl);
+
+        assertThat(productLineRepo.findById("Test Ships")).isPresent();
+    }
+
+    @Test
+    void repo_save_shouldIncreaseCount() {
+        long countBefore = productLineRepo.count();
+        ProductLine pl = new ProductLine();
+        pl.setProductLine("Test Trains");
+        pl.setTextDescription("Test trains product line");
+        productLineRepo.save(pl);
+        assertThat(productLineRepo.count()).isEqualTo(countBefore + 1);
+    }
+
+    @Test
+    void repo_update_description_shouldModify() {
+        ProductLine pl = productLineRepo.findById("Test Motorcycles").orElseThrow();
+        pl.setTextDescription("Updated motorcycle description");
+        productLineRepo.save(pl);
+
+        assertThat(productLineRepo.findById("Test Motorcycles")
+                .orElseThrow().getTextDescription())
+                .isEqualTo("Updated motorcycle description");
+    }
+
+    @Test
+    void repo_update_shouldNotChangeOtherFields() {
+        ProductLine pl = productLineRepo.findById("Test Motorcycles").orElseThrow();
+        pl.setTextDescription("Changed description");
+        productLineRepo.save(pl);
+
+        assertThat(productLineRepo.findById("Test Motorcycles")
+                .orElseThrow().getProductLine())
+                .isEqualTo("Test Motorcycles");
+    }
+
+    @Test
+    void repo_deleteById_shouldRemoveProductLine() {
+        productLineRepo.deleteById("Test Planes");
+        assertThat(productLineRepo.findById("Test Planes")).isEmpty();
+    }
+
+    @Test
+    void repo_deleteById_shouldDecreaseCount() {
+        long countBefore = productLineRepo.count();
+        productLineRepo.deleteById("Test Planes");
+        assertThat(productLineRepo.count()).isEqualTo(countBefore - 1);
     }
 }

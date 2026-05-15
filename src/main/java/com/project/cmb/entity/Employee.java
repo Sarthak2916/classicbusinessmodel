@@ -1,16 +1,17 @@
 package com.project.cmb.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Table(name = "employees")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Employee {
@@ -31,12 +32,20 @@ public class Employee {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "officeCode")
-    private String officeCode;
-
-    @Column(name = "reportsTo")
-    private Integer reportsTo;
-
     @Column(name = "jobTitle")
     private String jobTitle;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "officeCode")
+    private Office office;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reportsTo")
+    private Employee reportsTo;
+
+    @OneToMany(mappedBy = "reportsTo", fetch = FetchType.LAZY)
+    private List<Employee> reportees;
+
+    @OneToMany(mappedBy = "salesRepEmployee", fetch = FetchType.LAZY)
+    private List<Customer> customers;
 }

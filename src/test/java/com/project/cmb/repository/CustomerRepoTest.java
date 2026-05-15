@@ -2,7 +2,7 @@ package com.project.cmb.repository;
 
 import com.project.cmb.entity.Customer;
 import com.project.cmb.repo.CustomerRepo;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -14,487 +14,290 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CustomerRepoTest {
 
     @Autowired
-    private CustomerRepo customerRepository;
+    private CustomerRepo customerRepo;
 
-    // =====================================================
-    // CUSTOMER LIST PAGE TESTS
-    // =====================================================
+    @BeforeEach
+    void setup() {
+        Customer c1 = new Customer();
+        c1.setCustomerNumber(9101);
+        c1.setCustomerName("Test Alpha Corp");
+        c1.setContactFirstName("John");
+        c1.setContactLastName("Doe");
+        c1.setPhone("1111111111");
+        c1.setAddressLine1("123 Main St");
+        c1.setCity("New York");
+        c1.setCountry("USA");
+        c1.setCreditLimit(new BigDecimal("10000.00"));
+        customerRepo.save(c1);
+
+        Customer c2 = new Customer();
+        c2.setCustomerNumber(9102);
+        c2.setCustomerName("Test Beta Ltd");
+        c2.setContactFirstName("Jane");
+        c2.setContactLastName("Smith");
+        c2.setPhone("2222222222");
+        c2.setAddressLine1("456 Oak Ave");
+        c2.setCity("Paris");
+        c2.setCountry("France");
+        c2.setCreditLimit(new BigDecimal("25000.00"));
+        customerRepo.save(c2);
+
+        Customer c3 = new Customer();
+        c3.setCustomerNumber(9103);
+        c3.setCustomerName("Test Gamma Inc");
+        c3.setContactFirstName("Bob");
+        c3.setContactLastName("Jones");
+        c3.setPhone("3333333333");
+        c3.setAddressLine1("789 Pine Rd");
+        c3.setCity("London");
+        c3.setCountry("UK");
+        c3.setCreditLimit(new BigDecimal("5000.00"));
+        customerRepo.save(c3);
+    }
+
+    // --- findAll ---
 
     @Test
-    @DisplayName("Test Find By Customer Name Containing Ignore Case")
-    void testFindByCustomerNameContainingIgnoreCase() {
+    void repo_findAll_shouldReturnCustomers() {
+        Page<Customer> result = customerRepo.findAll(PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isGreaterThan(0);
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByCustomerNameContainingIgnoreCase(
-                        "atelier",
-                        PageRequest.of(0, 5)
-                );
+    // --- findById ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_findById_shouldReturnCustomer() {
+        Optional<Customer> result = customerRepo.findById(9101);
+        assertThat(result).isPresent();
+        assertThat(result.get().getCustomerName()).isEqualTo("Test Alpha Corp");
     }
 
     @Test
-    @DisplayName("Test Find By Phone Containing")
-    void testFindByPhoneContaining() {
+    void repo_findById_whenNotExists_shouldReturnEmpty() {
+        Optional<Customer> result = customerRepo.findById(99999);
+        assertThat(result).isEmpty();
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByPhoneContaining(
-                        "40",
-                        PageRequest.of(0, 5)
-                );
+    // --- save ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_save_shouldPersistNewCustomer() {
+        Customer c = new Customer();
+        c.setCustomerNumber(9104);
+        c.setCustomerName("Test Delta Co");
+        c.setContactFirstName("Alice");
+        c.setContactLastName("Brown");
+        c.setPhone("4444444444");
+        c.setAddressLine1("321 Elm St");
+        c.setCity("Berlin");
+        c.setCountry("Germany");
+        c.setCreditLimit(new BigDecimal("15000.00"));
+        customerRepo.save(c);
+
+        assertThat(customerRepo.findById(9104)).isPresent();
     }
 
     @Test
-    @DisplayName("Test Find By Country")
-    void testFindByCountry() {
+    void repo_save_shouldIncreaseCount() {
+        long countBefore = customerRepo.count();
 
-        Page<Customer> customers =
-                customerRepository.findByCountry(
-                        "France",
-                        PageRequest.of(0, 5)
-                );
+        Customer c = new Customer();
+        c.setCustomerNumber(9105);
+        c.setCustomerName("Test Epsilon SA");
+        c.setContactFirstName("Eve");
+        c.setContactLastName("White");
+        c.setPhone("5555555555");
+        c.setAddressLine1("654 Birch Ln");
+        c.setCity("Madrid");
+        c.setCountry("Spain");
+        c.setCreditLimit(new BigDecimal("8000.00"));
+        customerRepo.save(c);
 
-        assertNotNull(customers);
+        assertThat(customerRepo.count()).isEqualTo(countBefore + 1);
+    }
+
+    // --- update ---
+
+    @Test
+    void repo_update_shouldModifyCustomer() {
+        Customer c = customerRepo.findById(9101).orElseThrow();
+        c.setPhone("9999999999");
+        customerRepo.save(c);
+
+        assertThat(customerRepo.findById(9101).orElseThrow().getPhone())
+                .isEqualTo("9999999999");
     }
 
     @Test
-    @DisplayName("Test Find By City")
-    void testFindByCity() {
+    void repo_update_shouldNotChangeOtherFields() {
+        Customer c = customerRepo.findById(9101).orElseThrow();
+        c.setCity("Chicago");
+        customerRepo.save(c);
 
-        Page<Customer> customers =
-                customerRepository.findByCity(
-                        "Nantes",
-                        PageRequest.of(0, 5)
-                );
+        Customer updated = customerRepo.findById(9101).orElseThrow();
+        assertThat(updated.getCustomerName()).isEqualTo("Test Alpha Corp");
+        assertThat(updated.getCountry()).isEqualTo("USA");
+    }
 
-        assertNotNull(customers);
+    // --- delete ---
+
+    @Test
+    void repo_deleteById_shouldRemoveCustomer() {
+        customerRepo.deleteById(9103);
+        assertThat(customerRepo.findById(9103)).isEmpty();
     }
 
     @Test
-    @DisplayName("Test Find By Postal Code")
-    void testFindByPostalCode() {
+    void repo_deleteById_shouldDecreaseCount() {
+        long countBefore = customerRepo.count();
+        customerRepo.deleteById(9103);
+        assertThat(customerRepo.count()).isEqualTo(countBefore - 1);
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByPostalCode(
-                        "44000",
-                        PageRequest.of(0, 5)
-                );
+    // --- findByCustomerNameContainingIgnoreCase ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_findByName_shouldReturnMatch() {
+        Page<Customer> result = customerRepo
+                .findByCustomerNameContainingIgnoreCase("alpha", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9101))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Credit Limit Between")
-    void testFindByCreditLimitBetween() {
-
-        Page<Customer> customers =
-                customerRepository.findByCreditLimitBetween(
-                        BigDecimal.valueOf(10000),
-                        BigDecimal.valueOf(50000),
-                        PageRequest.of(0, 5)
-                );
-
-        assertNotNull(customers);
+    void repo_findByName_caseInsensitive_shouldWork() {
+        Page<Customer> result = customerRepo
+                .findByCustomerNameContainingIgnoreCase("BETA", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9102))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Credit Limit Greater Than Equal")
-    void testFindByCreditLimitGreaterThanEqual() {
+    void repo_findByName_noMatch_shouldReturnEmpty() {
+        Page<Customer> result = customerRepo
+                .findByCustomerNameContainingIgnoreCase("xyzxyzxyz", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByCreditLimitGreaterThanEqual(
-                        BigDecimal.valueOf(20000),
-                        PageRequest.of(0, 5)
-                );
+    // --- findByPhoneContaining ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_findByPhone_shouldReturnMatch() {
+        Page<Customer> result = customerRepo
+                .findByPhoneContaining("2222", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9102))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Credit Limit Less Than Equal")
-    void testFindByCreditLimitLessThanEqual() {
+    void repo_findByPhone_noMatch_shouldReturnEmpty() {
+        Page<Customer> result = customerRepo
+                .findByPhoneContaining("0000000000", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByCreditLimitLessThanEqual(
-                        BigDecimal.valueOf(50000),
-                        PageRequest.of(0, 5)
-                );
+    // --- findByCountry ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_findByCountry_shouldReturnMatch() {
+        Page<Customer> result = customerRepo
+                .findByCountry("France", PageRequest.of(0, 100));
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9102))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Country And Credit Limit Between")
-    void testFindByCountryAndCreditLimitBetween() {
+    void repo_findByCountry_wrongCountry_shouldReturnEmpty() {
+        Page<Customer> result = customerRepo
+                .findByCountry("Antarctica", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
 
-        Page<Customer> customers =
-                customerRepository.findByCountryAndCreditLimitBetween(
-                        "France",
-                        BigDecimal.valueOf(10000),
-                        BigDecimal.valueOf(50000),
-                        PageRequest.of(0, 5)
-                );
+    // --- findBySalesRepEmployee_EmployeeNumber ---
 
-        assertNotNull(customers);
+    @Test
+    void repo_findBySalesRep_shouldReturnEmpty_whenNoCustomersAssigned() {
+        // No customers in test data are assigned to employee 99999
+        List<Customer> result = customerRepo
+                .findBySalesRepEmployee_EmployeeNumber(99999);
+        assertThat(result).isEmpty();
+    }
+
+
+    // --- findByCreditLimitBetween ---
+
+    @Test
+    void repo_findByCreditLimitBetween_shouldReturnMatchingCustomers() {
+        Page<Customer> result = customerRepo
+                .findByCreditLimitBetween(
+                        new BigDecimal("8000.00"),
+                        new BigDecimal("30000.00"),
+                        PageRequest.of(0, 10));
+        // c1 (10000) and c2 (25000) fall in range, c3 (5000) does not
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9101))).isTrue();
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9102))).isTrue();
+        assertThat(result.getContent().stream()
+                .noneMatch(c -> c.getCustomerNumber().equals(9103))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Customer Name And Country")
-    void testFindByCustomerNameContainingIgnoreCaseAndCountry() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCustomerNameContainingIgnoreCaseAndCountry(
-                                "atelier",
-                                "France",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // CUSTOMER DETAIL TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Find By Customer Number")
-    void testFindByCustomerNumber() {
-
-        Optional<Customer> customer =
-                customerRepository.findByCustomerNumber(103);
-
-        assertTrue(customer.isPresent());
+    void repo_findByCreditLimitBetween_exactBoundary_shouldInclude() {
+        // 10000.00 is exactly c1's credit limit — boundary should be inclusive
+        Page<Customer> result = customerRepo
+                .findByCreditLimitBetween(
+                        new BigDecimal("10000.00"),
+                        new BigDecimal("10000.00"),
+                        PageRequest.of(0, 10));
+        assertThat(result.getContent().stream()
+                .anyMatch(c -> c.getCustomerNumber().equals(9101))).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Phone")
-    void testFindByPhone() {
+    void repo_findByCreditLimitBetween_noMatch_shouldReturnEmpty() {
+        Page<Customer> result = customerRepo
+                .findByCreditLimitBetween(
+                        new BigDecimal("99000.00"),
+                        new BigDecimal("99999.00"),
+                        PageRequest.of(0, 10));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
 
-        Optional<Customer> customer =
-                customerRepository.findByPhone("40.32.2555");
+// --- existsByCustomerName ---
 
-        assertNotNull(customer);
+    @Test
+    void repo_existsByCustomerName_shouldReturnTrue_whenExists() {
+        assertThat(customerRepo.existsByCustomerName("Test Alpha Corp")).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Customer Name")
-    void testFindByCustomerName() {
+    void repo_existsByCustomerName_shouldReturnFalse_whenNotExists() {
+        assertThat(customerRepo.existsByCustomerName("Nonexistent Corp")).isFalse();
+    }
 
-        Optional<Customer> customer =
-                customerRepository.findByCustomerName("Atelier Graphique");
+// --- existsByPhone ---
 
-        assertNotNull(customer);
+    @Test
+    void repo_existsByPhone_shouldReturnTrue_whenExists() {
+        assertThat(customerRepo.existsByPhone("1111111111")).isTrue();
     }
 
     @Test
-    @DisplayName("Test Find By Sales Rep Employee Number")
-    void testFindBySalesRepEmployeeNumber() {
-
-        List<Customer> customers =
-                customerRepository.findBySalesRepEmployeeNumber(1370);
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // ADD CUSTOMER TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Exists By Customer Name")
-    void testExistsByCustomerName() {
-
-        boolean exists =
-                customerRepository.existsByCustomerName("Atelier Graphique");
-
-        assertTrue(exists);
+    void repo_existsByPhone_shouldReturnFalse_whenNotExists() {
+        assertThat(customerRepo.existsByPhone("0000000000")).isFalse();
     }
 
     @Test
-    @DisplayName("Test Exists By Phone")
-    void testExistsByPhone() {
-
-        boolean exists =
-                customerRepository.existsByPhone("40.32.2555");
-
-        assertTrue(exists);
-    }
-
-    @Test
-    @DisplayName("Test Find By Contact First Name")
-    void testFindByContactFirstNameContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByContactFirstNameContainingIgnoreCase(
-                                "car",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Contact Last Name")
-    void testFindByContactLastNameContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByContactLastNameContainingIgnoreCase(
-                                "sch",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // EDIT CUSTOMER TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Find By Customer Number And Phone")
-    void testFindByCustomerNumberAndPhone() {
-
-        Optional<Customer> customer =
-                customerRepository.findByCustomerNumberAndPhone(
-                        103,
-                        "40.32.2555"
-                );
-
-        assertTrue(customer.isPresent());
-    }
-
-    @Test
-    @DisplayName("Test Find By Credit Limit Greater Than")
-    void testFindByCreditLimitGreaterThan() {
-
-        Page<Customer> customers =
-                customerRepository.findByCreditLimitGreaterThan(
-                        BigDecimal.valueOf(10000),
-                        PageRequest.of(0, 5)
-                );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Credit Limit Less Than")
-    void testFindByCreditLimitLessThan() {
-
-        Page<Customer> customers =
-                customerRepository.findByCreditLimitLessThan(
-                        BigDecimal.valueOf(100000),
-                        PageRequest.of(0, 5)
-                );
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // ADDRESS UPDATE TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Find By Address Line1")
-    void testFindByAddressLine1ContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository.findByAddressLine1ContainingIgnoreCase(
-                        "royale",
-                        PageRequest.of(0, 5)
-                );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Country Containing Ignore Case")
-    void testFindByCountryContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository.findByCountryContainingIgnoreCase(
-                        "fra",
-                        PageRequest.of(0, 5)
-                );
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // DASHBOARD TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Count Customers")
-    void testCount() {
-
-        long count = customerRepository.count();
-
-        assertTrue(count > 0);
-    }
-
-    @Test
-    @DisplayName("Test Count Distinct Countries")
-    void testCountDistinctByCountryIsNotNull() {
-
-        long count =
-                customerRepository.countDistinctByCountryIsNotNull();
-
-        assertTrue(count > 0);
-    }
-
-    @Test
-    @DisplayName("Test Find Top 5 By Credit Limit Desc")
-    void testFindTop5ByOrderByCreditLimitDesc() {
-
-        List<Customer> customers =
-                customerRepository.findTop5ByOrderByCreditLimitDesc();
-
-        assertEquals(5, customers.size());
-    }
-
-    @Test
-    @DisplayName("Test Find Top 5 By Customer Number Desc")
-    void testFindTop5ByOrderByCustomerNumberDesc() {
-
-        List<Customer> customers =
-                customerRepository.findTop5ByOrderByCustomerNumberDesc();
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // EXTRA FILTER TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Find By Country And City")
-    void testFindByCountryContainingIgnoreCaseAndCityContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCountryContainingIgnoreCaseAndCityContainingIgnoreCase(
-                                "fra",
-                                "nan",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Customer Name And City")
-    void testFindByCustomerNameContainingIgnoreCaseAndCityContainingIgnoreCase() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCustomerNameContainingIgnoreCaseAndCityContainingIgnoreCase(
-                                "atelier",
-                                "nan",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Customer Name And Credit Range")
-    void testFindByCustomerNameContainingIgnoreCaseAndCreditLimitBetween() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCustomerNameContainingIgnoreCaseAndCreditLimitBetween(
-                                "atelier",
-                                BigDecimal.valueOf(10000),
-                                BigDecimal.valueOf(50000),
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Country And Credit Limit Greater Than Equal")
-    void testFindByCountryAndCreditLimitGreaterThanEqual() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCountryAndCreditLimitGreaterThanEqual(
-                                "France",
-                                BigDecimal.valueOf(10000),
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find By Country And Credit Limit Less Than Equal")
-    void testFindByCountryAndCreditLimitLessThanEqual() {
-
-        Page<Customer> customers =
-                customerRepository
-                        .findByCountryAndCreditLimitLessThanEqual(
-                                "France",
-                                BigDecimal.valueOf(50000),
-                                PageRequest.of(0, 5)
-                        );
-
-        assertNotNull(customers);
-    }
-
-    // =====================================================
-    // SORTING TESTS
-    // =====================================================
-
-    @Test
-    @DisplayName("Test Find Top 10 By Customer Name Asc")
-    void testFindTop10ByOrderByCustomerNameAsc() {
-
-        List<Customer> customers =
-                customerRepository.findTop10ByOrderByCustomerNameAsc();
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find Top 10 By Credit Limit Asc")
-    void testFindTop10ByOrderByCreditLimitAsc() {
-
-        List<Customer> customers =
-                customerRepository.findTop10ByOrderByCreditLimitAsc();
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find Top 10 By Credit Limit Desc")
-    void testFindTop10ByOrderByCreditLimitDesc() {
-
-        List<Customer> customers =
-                customerRepository.findTop10ByOrderByCreditLimitDesc();
-
-        assertNotNull(customers);
-    }
-
-    @Test
-    @DisplayName("Test Find Top 10 By Country Asc")
-    void testFindTop10ByOrderByCountryAsc() {
-
-        List<Customer> customers =
-                customerRepository.findTop10ByOrderByCountryAsc();
-
-        assertNotNull(customers);
+    void repo_existsByPhone_afterDelete_shouldReturnFalse() {
+        customerRepo.deleteById(9101);
+        assertThat(customerRepo.existsByPhone("1111111111")).isFalse();
     }
 }
