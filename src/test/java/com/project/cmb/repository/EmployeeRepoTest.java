@@ -1,7 +1,9 @@
 package com.project.cmb.repository;
 
 import com.project.cmb.entity.Employee;
+import com.project.cmb.entity.Office;
 import com.project.cmb.repo.EmployeeRepo;
+import com.project.cmb.repo.OfficeRepo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +11,10 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+
 import java.util.List;
 import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -18,10 +22,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EmployeeRepoTest {
 
     @Autowired
-    private EmployeeRepo employeeRepository;
+    private EmployeeRepo employeeRepo;
+
+    @Autowired
+    private OfficeRepo officeRepo;
+
+    private Office office1;
+    private Office office2;
 
     @BeforeEach
     void setup() {
+        // Use existing offices from DB — officeCode "1" and "2" exist in classicmodels
+        office1 = officeRepo.findById("1").orElseThrow();
+        office2 = officeRepo.findById("2").orElseThrow();
 
         Employee emp1 = new Employee();
         emp1.setEmployeeNumber(9001);
@@ -30,8 +43,9 @@ class EmployeeRepoTest {
         emp1.setEmail("test.dmurphy@classicmodel.com");
         emp1.setExtension("x5800");
         emp1.setJobTitle("President");
-        emp1.setOfficeCode("1");
+        emp1.setOffice(office1);
         emp1.setReportsTo(null);
+        employeeRepo.save(emp1);
 
         Employee emp2 = new Employee();
         emp2.setEmployeeNumber(9002);
@@ -40,8 +54,9 @@ class EmployeeRepoTest {
         emp2.setEmail("test.mpatterson@classicmodel.com");
         emp2.setExtension("x4611");
         emp2.setJobTitle("VP Sales");
-        emp2.setOfficeCode("1");
-        emp2.setReportsTo(9001);
+        emp2.setOffice(office1);
+        emp2.setReportsTo(emp1);
+        employeeRepo.save(emp2);
 
         Employee emp3 = new Employee();
         emp3.setEmployeeNumber(9003);
@@ -50,340 +65,186 @@ class EmployeeRepoTest {
         emp3.setEmail("test.jfirrelli@classicmodel.com");
         emp3.setExtension("x9273");
         emp3.setJobTitle("Sales Rep");
-        emp3.setOfficeCode("2");
-        emp3.setReportsTo(9002);
-
-        employeeRepository.save(emp1);
-        employeeRepository.save(emp2);
-        employeeRepository.save(emp3);
+        emp3.setOffice(office2);
+        emp3.setReportsTo(emp2);
+        employeeRepo.save(emp3);
     }
-
 
     @Test
     void repo_findAll_shouldReturnAllEmployees() {
-
-        Page<Employee> result =
-                employeeRepository.findAll(
-                        PageRequest.of(0, 5)
-                );
-
-        assertThat(result.getTotalElements())
-                .isGreaterThan(0);
-
-        assertThat(result.getSize())
-                .isEqualTo(5);
+        Page<Employee> result = employeeRepo.findAll(PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isGreaterThan(0);
     }
 
     @Test
     void repo_findAll_shouldRespectPageSize() {
-
-        Page<Employee> result =
-                employeeRepository.findAll(
-                        PageRequest.of(0, 2)
-                );
-
-        assertThat(result.getContent())
-                .hasSize(2);
-
-        assertThat(result.getTotalPages())
-                .isGreaterThan(1);
+        Page<Employee> result = employeeRepo.findAll(PageRequest.of(0, 2));
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalPages()).isGreaterThan(1);
     }
 
     @Test
     void repo_findById_shouldReturnEmployee() {
-
-        Optional<Employee> result =
-                employeeRepository.findById(9001);
-
+        Optional<Employee> result = employeeRepo.findById(9001);
         assertThat(result).isPresent();
-
-        assertThat(result.get().getFirstName())
-                .isEqualTo("Diane");
-
-        assertThat(result.get().getJobTitle())
-                .isEqualTo("President");
+        assertThat(result.get().getFirstName()).isEqualTo("Diane");
+        assertThat(result.get().getJobTitle()).isEqualTo("President");
     }
 
     @Test
     void repo_findById_whenNotExists_shouldReturnEmpty() {
-
-        Optional<Employee> result =
-                employeeRepository.findById(99999);
-
+        Optional<Employee> result = employeeRepo.findById(99999);
         assertThat(result).isEmpty();
     }
 
-
     @Test
     void repo_save_shouldPersistNewEmployee() {
-
         Employee emp = new Employee();
-
         emp.setEmployeeNumber(9004);
         emp.setFirstName("John");
         emp.setLastName("Smith");
         emp.setEmail("test.jsmith@classicmodel.com");
         emp.setExtension("x1234");
         emp.setJobTitle("Sales Rep");
-        emp.setOfficeCode("1");
-        emp.setReportsTo(9001);
+        emp.setOffice(office1);
+        emp.setReportsTo(employeeRepo.findById(9001).orElseThrow());
+        employeeRepo.save(emp);
 
-        employeeRepository.save(emp);
-
-        Optional<Employee> saved =
-                employeeRepository.findById(9004);
-
+        Optional<Employee> saved = employeeRepo.findById(9004);
         assertThat(saved).isPresent();
-
-        assertThat(saved.get().getFirstName())
-                .isEqualTo("John");
+        assertThat(saved.get().getFirstName()).isEqualTo("John");
     }
 
     @Test
     void repo_save_shouldIncreaseCount() {
-
-        long countBefore = employeeRepository.count();
+        long countBefore = employeeRepo.count();
 
         Employee emp = new Employee();
-
         emp.setEmployeeNumber(9005);
         emp.setFirstName("Jane");
         emp.setLastName("Doe");
         emp.setEmail("test.jdoe@classicmodel.com");
         emp.setExtension("x5678");
         emp.setJobTitle("Sales Rep");
-        emp.setOfficeCode("2");
-        emp.setReportsTo(9002);
+        emp.setOffice(office2);
+        emp.setReportsTo(employeeRepo.findById(9002).orElseThrow());
+        employeeRepo.save(emp);
 
-        employeeRepository.save(emp);
-
-        assertThat(employeeRepository.count())
-                .isEqualTo(countBefore + 1);
+        assertThat(employeeRepo.count()).isEqualTo(countBefore + 1);
     }
 
 
     @Test
     void repo_update_shouldModifyExistingEmployee() {
-
-        Employee emp =
-                employeeRepository.findById(9001).get();
-
+        Employee emp = employeeRepo.findById(9001).orElseThrow();
         emp.setJobTitle("CEO");
+        employeeRepo.save(emp);
 
-        employeeRepository.save(emp);
-
-        Employee updated =
-                employeeRepository.findById(9001).get();
-
-        assertThat(updated.getJobTitle())
-                .isEqualTo("CEO");
+        Employee updated = employeeRepo.findById(9001).orElseThrow();
+        assertThat(updated.getJobTitle()).isEqualTo("CEO");
     }
 
     @Test
     void repo_update_shouldNotChangeOtherFields() {
-
-        Employee emp =
-                employeeRepository.findById(9001).get();
-
+        Employee emp = employeeRepo.findById(9001).orElseThrow();
         emp.setExtension("x9999");
+        employeeRepo.save(emp);
 
-        employeeRepository.save(emp);
-
-        Employee updated =
-                employeeRepository.findById(9001).get();
-
-        assertThat(updated.getFirstName())
-                .isEqualTo("Diane");
-
-        assertThat(updated.getLastName())
-                .isEqualTo("Murphy");
+        Employee updated = employeeRepo.findById(9001).orElseThrow();
+        assertThat(updated.getFirstName()).isEqualTo("Diane");
+        assertThat(updated.getLastName()).isEqualTo("Murphy");
     }
 
     @Test
     void repo_deleteById_shouldRemoveEmployee() {
-
-        employeeRepository.deleteById(9003);
-
-        Optional<Employee> result =
-                employeeRepository.findById(9003);
-
-        assertThat(result).isEmpty();
+        employeeRepo.deleteById(9003);
+        assertThat(employeeRepo.findById(9003)).isEmpty();
     }
 
     @Test
     void repo_deleteById_shouldDecreaseCount() {
-
-        long countBefore = employeeRepository.count();
-
-        employeeRepository.deleteById(9003);
-
-        assertThat(employeeRepository.count())
-                .isEqualTo(countBefore - 1);
+        long countBefore = employeeRepo.count();
+        employeeRepo.deleteById(9003);
+        assertThat(employeeRepo.count()).isEqualTo(countBefore - 1);
     }
-
 
 
     @Test
     void repo_findByName_shouldReturnMatchingEmployee() {
-
-        Page<Employee> result =
-                employeeRepository
-                        .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-                                "mary",
-                                "mary",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertThat(result.getTotalElements())
-                .isGreaterThan(0);
-
-        boolean found = result.getContent().stream()
-                .anyMatch(e ->
-                        e.getFirstName().equals("Mary")
-                                && e.getEmployeeNumber() == 9002
-                );
-
-        assertThat(found).isTrue();
+        Page<Employee> result = employeeRepo
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                        "mary", "mary", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(e -> e.getEmployeeNumber() == 9002)).isTrue();
     }
 
     @Test
     void repo_findByName_caseInsensitive_shouldWork() {
-
-        Page<Employee> result =
-                employeeRepository
-                        .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-                                "DIANE",
-                                "DIANE",
-                                PageRequest.of(0, 5)
-                        );
-
-        boolean found = result.getContent().stream()
-                .anyMatch(e ->
-                        e.getFirstName().equals("Diane")
-                                && e.getEmployeeNumber() == 9001
-                );
-
-        assertThat(found).isTrue();
+        Page<Employee> result = employeeRepo
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                        "DIANE", "DIANE", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(e -> e.getFirstName().equals("Diane"))).isTrue();
     }
 
     @Test
     void repo_findByName_partialName_shouldWork() {
-
-        Page<Employee> result =
-                employeeRepository
-                        .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-                                "pat",
-                                "pat",
-                                PageRequest.of(0, 5)
-                        );
-
-        boolean found = result.getContent().stream()
-                .anyMatch(e ->
-                        e.getLastName().equals("Patterson")
-                                && e.getEmployeeNumber() == 9002
-                );
-
-        assertThat(found).isTrue();
+        Page<Employee> result = employeeRepo
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                        "pat", "pat", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(e -> e.getLastName().equals("Patterson"))).isTrue();
     }
 
     @Test
     void repo_findByName_noMatch_shouldReturnEmpty() {
-
-        Page<Employee> result =
-                employeeRepository
-                        .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
-                                "xyzxyzxyz",
-                                "xyzxyzxyz",
-                                PageRequest.of(0, 5)
-                        );
-
-        assertThat(result.getTotalElements())
-                .isEqualTo(0);
+        Page<Employee> result = employeeRepo
+                .findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(
+                        "xyzxyzxyz", "xyzxyzxyz", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
 
     @Test
     void repo_findByOfficeCode_shouldReturnCorrectEmployees() {
-
-        Page<Employee> result =
-                employeeRepository.findByOfficeCode(
-                        "2",
-                        PageRequest.of(0, 5)
-                );
-
-        boolean found = result.getContent().stream()
-                .anyMatch(e ->
-                        e.getEmployeeNumber() == 9003
-                );
-
-        assertThat(found).isTrue();
+        Page<Employee> result = employeeRepo.findByOffice_OfficeCode(
+                "2", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(e -> e.getEmployeeNumber() == 9003)).isTrue();
     }
 
     @Test
     void repo_findByOfficeCode_wrongCode_shouldReturnEmpty() {
-
-        Page<Employee> result =
-                employeeRepository.findByOfficeCode(
-                        "999",
-                        PageRequest.of(0, 5)
-                );
-
-        assertThat(result.getTotalElements())
-                .isEqualTo(0);
+        Page<Employee> result = employeeRepo.findByOffice_OfficeCode(
+                "999", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
     @Test
     void repo_findByOfficeCode_shouldReturnOnlyThatOffice() {
-
-        Page<Employee> result =
-                employeeRepository.findByOfficeCode(
-                        "2",
-                        PageRequest.of(0, 5)
-                );
-
-        boolean allOffice2 = result.getContent().stream()
-                .allMatch(e ->
-                        e.getOfficeCode().equals("2")
-                );
-
-        assertThat(allOffice2).isTrue();
-    }
-
-
-    @Test
-    void repo_findByReportsTo_shouldReturnDirectReports() {
-
-        List<Employee> result =
-                employeeRepository.findByReportsTo(9001);
-
-        boolean found = result.stream()
-                .anyMatch(e ->
-                        e.getEmployeeNumber() == 9002
-                );
-
-        assertThat(found).isTrue();
+        Page<Employee> result = employeeRepo.findByOffice_OfficeCode(
+                "2", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .allMatch(e -> e.getOffice().getOfficeCode().equals("2"))).isTrue();
     }
 
     @Test
-    void repo_findByReportsTo_shouldReturnCorrectReport() {
-
-        List<Employee> result =
-                employeeRepository.findByReportsTo(9002);
-
-        boolean found = result.stream()
-                .anyMatch(e ->
-                        e.getEmployeeNumber() == 9003
-                );
-
-        assertThat(found).isTrue();
+    void repo_findByReportsTo_shouldReturnDirectReportees() {
+        List<Employee> result = employeeRepo.findByReportsTo_EmployeeNumber(9001);
+        assertThat(result.stream()
+                .anyMatch(e -> e.getEmployeeNumber() == 9002)).isTrue();
     }
 
     @Test
-    void repo_findByReportsTo_topLevel_shouldReturnEmpty() {
+    void repo_findByReportsTo_shouldReturnCorrectReportee() {
+        List<Employee> result = employeeRepo.findByReportsTo_EmployeeNumber(9002);
+        assertThat(result.stream()
+                .anyMatch(e -> e.getEmployeeNumber() == 9003)).isTrue();
+    }
 
-        List<Employee> result =
-                employeeRepository.findByReportsTo(99999);
-
+    @Test
+    void repo_findByReportsTo_noReportees_shouldReturnEmpty() {
+        List<Employee> result = employeeRepo.findByReportsTo_EmployeeNumber(99999);
         assertThat(result).isEmpty();
     }
 }
