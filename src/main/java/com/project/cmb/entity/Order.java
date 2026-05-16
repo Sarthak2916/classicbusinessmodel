@@ -39,3 +39,4 @@ public class Order {
     @Column(name = "customerNumber")
     private Integer customerNumber;
 }
+

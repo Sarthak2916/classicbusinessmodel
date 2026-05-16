@@ -11,20 +11,18 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import java.time.LocalDate;
 import java.util.List;
 
-@RepositoryRestResource(path = "payment")
+@RepositoryRestResource(path = "payments")
 public interface PaymentRepo extends JpaRepository<Payment, PaymentId> {
 
-    List<Payment> findById_CustomerNumber(
-            @Param("customerNumber") Integer customerNumber
-    );
+    // Search by customer number
+    List<Payment> findById_CustomerNumber(Integer customerNumber);
 
+    // Search by order number
+    List<Payment> findByOrderNumber(Integer orderNumber);
 
-    List<Payment> findByOrderNumber(
-            @Param("orderNumber") Integer orderNumber
-    );
+    // Filter by date range
+    List<Payment> findByPaymentDateBetween(LocalDate startDate, LocalDate endDate);
 
-    List<Payment> findByPaymentDateBetween(
-            @Param("startDate") LocalDate startDate,
-            @Param("endDate") LocalDate endDate
-    );
+    // Search by check number
+    List<Payment> findById_CheckNumberContainingIgnoreCase(String checkNumber);
 }
