@@ -62,7 +62,6 @@ class CustomerRepoTest {
         customerRepo.save(c3);
     }
 
-    // --- findAll ---
 
     @Test
     void repo_findAll_shouldReturnCustomers() {
@@ -70,7 +69,6 @@ class CustomerRepoTest {
         assertThat(result.getTotalElements()).isGreaterThan(0);
     }
 
-    // --- findById ---
 
     @Test
     void repo_findById_shouldReturnCustomer() {
@@ -85,7 +83,6 @@ class CustomerRepoTest {
         assertThat(result).isEmpty();
     }
 
-    // --- save ---
 
     @Test
     void repo_save_shouldPersistNewCustomer() {
@@ -123,7 +120,6 @@ class CustomerRepoTest {
         assertThat(customerRepo.count()).isEqualTo(countBefore + 1);
     }
 
-    // --- update ---
 
     @Test
     void repo_update_shouldModifyCustomer() {
@@ -146,7 +142,6 @@ class CustomerRepoTest {
         assertThat(updated.getCountry()).isEqualTo("USA");
     }
 
-    // --- delete ---
 
     @Test
     void repo_deleteById_shouldRemoveCustomer() {
@@ -160,8 +155,6 @@ class CustomerRepoTest {
         customerRepo.deleteById(9103);
         assertThat(customerRepo.count()).isEqualTo(countBefore - 1);
     }
-
-    // --- findByCustomerNameContainingIgnoreCase ---
 
     @Test
     void repo_findByName_shouldReturnMatch() {
@@ -186,8 +179,6 @@ class CustomerRepoTest {
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
-    // --- findByPhoneContaining ---
-
     @Test
     void repo_findByPhone_shouldReturnMatch() {
         Page<Customer> result = customerRepo
@@ -202,8 +193,6 @@ class CustomerRepoTest {
                 .findByPhoneContaining("0000000000", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
-
-    // --- findByCountry ---
 
     @Test
     void repo_findByCountry_shouldReturnMatch() {
@@ -220,8 +209,6 @@ class CustomerRepoTest {
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
-    // --- findBySalesRepEmployee_EmployeeNumber ---
-
     @Test
     void repo_findBySalesRep_shouldReturnEmpty_whenNoCustomersAssigned() {
         // No customers in test data are assigned to employee 99999
@@ -229,9 +216,6 @@ class CustomerRepoTest {
                 .findBySalesRepEmployee_EmployeeNumber(99999);
         assertThat(result).isEmpty();
     }
-
-
-    // --- findByCreditLimitBetween ---
 
     @Test
     void repo_findByCreditLimitBetween_shouldReturnMatchingCustomers() {
@@ -271,8 +255,6 @@ class CustomerRepoTest {
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
-// --- existsByCustomerName ---
-
     @Test
     void repo_existsByCustomerName_shouldReturnTrue_whenExists() {
         assertThat(customerRepo.existsByCustomerName("Test Alpha Corp")).isTrue();
@@ -282,8 +264,6 @@ class CustomerRepoTest {
     void repo_existsByCustomerName_shouldReturnFalse_whenNotExists() {
         assertThat(customerRepo.existsByCustomerName("Nonexistent Corp")).isFalse();
     }
-
-// --- existsByPhone ---
 
     @Test
     void repo_existsByPhone_shouldReturnTrue_whenExists() {
