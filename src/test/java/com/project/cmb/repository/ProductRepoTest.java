@@ -11,21 +11,17 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-
 import java.math.BigDecimal;
 import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class ProductRepoTest {
 
-    @Autowired
-    private ProductRepo productRepo;
-
-    @Autowired
-    private ProductLineRepo productLineRepo;
+    @Autowired private ProductRepo productRepo;
+    @Autowired private ProductLineRepo productLineRepo;
 
     private ProductLine testLine1;
     private ProductLine testLine2;
@@ -79,14 +75,10 @@ class ProductRepoTest {
         productRepo.save(p3);
     }
 
-    // --- findAll ---
-
     @Test
     void repo_findAll_shouldReturnProducts() {
         assertThat(productRepo.findAll()).isNotEmpty();
     }
-
-    // --- findById ---
 
     @Test
     void repo_findById_shouldReturnProduct() {
@@ -97,11 +89,8 @@ class ProductRepoTest {
 
     @Test
     void repo_findById_whenNotExists_shouldReturnEmpty() {
-        Optional<Product> result = productRepo.findById("ZZZZZZ");
-        assertThat(result).isEmpty();
+        assertThat(productRepo.findById("ZZZZZZ")).isEmpty();
     }
-
-    // --- save ---
 
     @Test
     void repo_save_shouldPersistNewProduct() {
@@ -116,7 +105,6 @@ class ProductRepoTest {
         p.setBuyPrice(new BigDecimal("90.00"));
         p.setMsrp(new BigDecimal("179.99"));
         productRepo.save(p);
-
         assertThat(productRepo.findById("T_004")).isPresent();
     }
 
@@ -137,14 +125,11 @@ class ProductRepoTest {
         assertThat(productRepo.count()).isEqualTo(countBefore + 1);
     }
 
-    // --- update ---
-
     @Test
     void repo_update_buyPrice_shouldModify() {
         Product p = productRepo.findById("T_001").orElseThrow();
         p.setBuyPrice(new BigDecimal("55.00"));
         productRepo.save(p);
-
         assertThat(productRepo.findById("T_001").orElseThrow().getBuyPrice())
                 .isEqualByComparingTo("55.00");
     }
@@ -154,7 +139,6 @@ class ProductRepoTest {
         Product p = productRepo.findById("T_001").orElseThrow();
         p.setMsrp(new BigDecimal("109.99"));
         productRepo.save(p);
-
         assertThat(productRepo.findById("T_001").orElseThrow().getMsrp())
                 .isEqualByComparingTo("109.99");
     }
@@ -164,7 +148,6 @@ class ProductRepoTest {
         Product p = productRepo.findById("T_001").orElseThrow();
         p.setQuantityInStock((short) 150);
         productRepo.save(p);
-
         assertThat(productRepo.findById("T_001").orElseThrow().getQuantityInStock())
                 .isEqualTo((short) 150);
     }
@@ -174,13 +157,10 @@ class ProductRepoTest {
         Product p = productRepo.findById("T_001").orElseThrow();
         p.setBuyPrice(new BigDecimal("60.00"));
         productRepo.save(p);
-
         Product updated = productRepo.findById("T_001").orElseThrow();
         assertThat(updated.getProductName()).isEqualTo("Test Classic Car One");
         assertThat(updated.getProductVendor()).isEqualTo("Test Vendor A");
     }
-
-    // --- delete ---
 
     @Test
     void repo_deleteById_shouldRemoveProduct() {
@@ -194,8 +174,6 @@ class ProductRepoTest {
         productRepo.deleteById("T_003");
         assertThat(productRepo.count()).isEqualTo(countBefore - 1);
     }
-
-    // --- findByProductNameContainingIgnoreCase ---
 
     @Test
     void repo_findByName_shouldReturnMatch() {
@@ -225,8 +203,7 @@ class ProductRepoTest {
         Page<Product> result = productRepo
                 .findByProductLine_ProductLine("Test Line A", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
-                .allMatch(p -> p.getProductLine().getProductLine().equals("Test Line A")))
-                .isTrue();
+                .allMatch(p -> p.getProductLine().getProductLine().equals("Test Line A"))).isTrue();
     }
 
     @Test
@@ -244,5 +221,71 @@ class ProductRepoTest {
         Page<Product> result = productRepo
                 .findByProductLine_ProductLine("Nonexistent Line", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    void repo_findByVendor_shouldReturnMatch() {
+        Page<Product> result = productRepo
+                .findByProductVendorContainingIgnoreCase("vendor a", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
+    }
+
+    @Test
+    void repo_findByVendor_caseInsensitive_shouldWork() {
+        Page<Product> result = productRepo
+                .findByProductVendorContainingIgnoreCase("VENDOR B", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
+    }
+
+    @Test
+    void repo_findByVendor_noMatch_shouldReturnEmpty() {
+        Page<Product> result = productRepo
+                .findByProductVendorContainingIgnoreCase("xyzxyzxyz", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    void repo_findByProductCode_shouldReturnMatch() {
+        Page<Product> result = productRepo
+                .findByProductCodeContainingIgnoreCase("T_001", PageRequest.of(0, 5));
+        assertThat(result.getContent().stream()
+                .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
+    }
+
+    @Test
+    void repo_findByProductCode_partialMatch_shouldWork() {
+        Page<Product> result = productRepo
+                .findByProductCodeContainingIgnoreCase("T_", PageRequest.of(0, 10));
+        assertThat(result.getContent().size()).isGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    void repo_findByProductCode_noMatch_shouldReturnEmpty() {
+        Page<Product> result = productRepo
+                .findByProductCodeContainingIgnoreCase("ZZZZZZ", PageRequest.of(0, 5));
+        assertThat(result.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    void repo_findByLowStock_shouldReturnProductsBelowThreshold() {
+        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 60);
+        assertThat(result.stream()
+                .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
+    }
+
+    @Test
+    void repo_findByLowStock_shouldNotReturnHighStockProducts() {
+        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 60);
+        assertThat(result.stream()
+                .noneMatch(p -> p.getProductCode().equals("T_003"))).isTrue();
+    }
+
+    @Test
+    void repo_findByLowStock_noneBelow_shouldReturnEmpty() {
+        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 1);
+        assertThat(result.stream()
+                .noneMatch(p -> p.getProductCode().startsWith("T_"))).isTrue();
     }
 }
