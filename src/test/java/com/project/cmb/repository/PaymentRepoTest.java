@@ -1,8 +1,10 @@
 package com.project.cmb.repository;
 
+import com.project.cmb.entity.Customer;
 import com.project.cmb.entity.Order;
 import com.project.cmb.entity.Payment;
 import com.project.cmb.entity.PaymentId;
+import com.project.cmb.repo.CustomerRepo;
 import com.project.cmb.repo.OrderRepo;
 import com.project.cmb.repo.PaymentRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,65 +24,52 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PaymentRepoTest {
 
-    @Autowired
-    private PaymentRepo paymentRepo;
+    @Autowired private PaymentRepo paymentRepo;
+    @Autowired private OrderRepo orderRepo;
+    @Autowired private CustomerRepo customerRepo;
 
-    @Autowired
-    private OrderRepo orderRepo;
-
-    // Use existing customerNumbers from classicmodels (103, 112 exist)
-    // Use unique check numbers prefixed with TEST_ to avoid collision
     private final PaymentId id1 = new PaymentId(103, "TEST_CHK001");
     private final PaymentId id2 = new PaymentId(103, "TEST_CHK002");
     private final PaymentId id3 = new PaymentId(112, "TEST_CHK003");
 
     @BeforeEach
     void setup() {
-        // Must insert parent orders first — FK constraint on payments.orderNumber
+        // Load existing customers from real DB
+        Customer customer103 = customerRepo.findById(103).orElseThrow();
+        Customer customer112 = customerRepo.findById(112).orElseThrow();
+
+        // Insert parent orders first — FK constraint on payments.orderNumber
         Order o1 = new Order();
-        o1.setOrderNumber(90001);
-        o1.setOrderDate(LocalDate.of(2024, 1, 1));
+        o1.setOrderNumber(90001); o1.setOrderDate(LocalDate.of(2024, 1, 1));
         o1.setRequiredDate(LocalDate.of(2024, 1, 10));
-        o1.setStatus("In Process");
-        o1.setCustomerNumber(103);
+        o1.setStatus("In Process"); o1.setCustomer(customer103);
         orderRepo.save(o1);
 
         Order o2 = new Order();
-        o2.setOrderNumber(90002);
-        o2.setOrderDate(LocalDate.of(2024, 2, 1));
+        o2.setOrderNumber(90002); o2.setOrderDate(LocalDate.of(2024, 2, 1));
         o2.setRequiredDate(LocalDate.of(2024, 2, 10));
-        o2.setStatus("In Process");
-        o2.setCustomerNumber(103);
+        o2.setStatus("In Process"); o2.setCustomer(customer103);
         orderRepo.save(o2);
 
         Order o3 = new Order();
-        o3.setOrderNumber(90003);
-        o3.setOrderDate(LocalDate.of(2024, 3, 1));
+        o3.setOrderNumber(90003); o3.setOrderDate(LocalDate.of(2024, 3, 1));
         o3.setRequiredDate(LocalDate.of(2024, 3, 10));
-        o3.setStatus("In Process");
-        o3.setCustomerNumber(112);
+        o3.setStatus("In Process"); o3.setCustomer(customer112);
         orderRepo.save(o3);
 
-        // Now insert payments
         Payment p1 = new Payment();
-        p1.setId(id1);
-        p1.setPaymentDate(LocalDate.of(2024, 1, 10));
-        p1.setAmount(new BigDecimal("1500.00"));
-        p1.setOrderNumber(90001);
+        p1.setId(id1); p1.setPaymentDate(LocalDate.of(2024, 1, 10));
+        p1.setAmount(new BigDecimal("1500.00")); p1.setOrderNumber(90001);
         paymentRepo.save(p1);
 
         Payment p2 = new Payment();
-        p2.setId(id2);
-        p2.setPaymentDate(LocalDate.of(2024, 2, 15));
-        p2.setAmount(new BigDecimal("2500.00"));
-        p2.setOrderNumber(90002);
+        p2.setId(id2); p2.setPaymentDate(LocalDate.of(2024, 2, 15));
+        p2.setAmount(new BigDecimal("2500.00")); p2.setOrderNumber(90002);
         paymentRepo.save(p2);
 
         Payment p3 = new Payment();
-        p3.setId(id3);
-        p3.setPaymentDate(LocalDate.of(2024, 3, 20));
-        p3.setAmount(new BigDecimal("3500.00"));
-        p3.setOrderNumber(90003);
+        p3.setId(id3); p3.setPaymentDate(LocalDate.of(2024, 3, 20));
+        p3.setAmount(new BigDecimal("3500.00")); p3.setOrderNumber(90003);
         paymentRepo.save(p3);
     }
 
@@ -102,9 +91,7 @@ class PaymentRepoTest {
 
     @Test
     void repo_findById_whenNotExists_shouldReturnEmpty() {
-        Optional<Payment> result = paymentRepo.findById(
-                new PaymentId(99999, "NONEXISTENT"));
-        assertThat(result).isEmpty();
+        assertThat(paymentRepo.findById(new PaymentId(99999, "NONEXISTENT"))).isEmpty();
     }
 
     // --- save ---
@@ -113,12 +100,9 @@ class PaymentRepoTest {
     void repo_save_shouldPersistNewPayment() {
         PaymentId newId = new PaymentId(112, "TEST_CHK004");
         Payment p = new Payment();
-        p.setId(newId);
-        p.setPaymentDate(LocalDate.of(2024, 4, 1));
-        p.setAmount(new BigDecimal("500.00"));
-        p.setOrderNumber(90003);
+        p.setId(newId); p.setPaymentDate(LocalDate.of(2024, 4, 1));
+        p.setAmount(new BigDecimal("500.00")); p.setOrderNumber(90003);
         paymentRepo.save(p);
-
         assertThat(paymentRepo.findById(newId)).isPresent();
     }
 
@@ -127,10 +111,8 @@ class PaymentRepoTest {
         long countBefore = paymentRepo.count();
         PaymentId newId = new PaymentId(103, "TEST_CHK005");
         Payment p = new Payment();
-        p.setId(newId);
-        p.setPaymentDate(LocalDate.of(2024, 5, 1));
-        p.setAmount(new BigDecimal("750.00"));
-        p.setOrderNumber(90001);
+        p.setId(newId); p.setPaymentDate(LocalDate.of(2024, 5, 1));
+        p.setAmount(new BigDecimal("750.00")); p.setOrderNumber(90001);
         paymentRepo.save(p);
         assertThat(paymentRepo.count()).isEqualTo(countBefore + 1);
     }
@@ -142,7 +124,6 @@ class PaymentRepoTest {
         Payment p = paymentRepo.findById(id1).orElseThrow();
         p.setAmount(new BigDecimal("1800.00"));
         paymentRepo.save(p);
-
         assertThat(paymentRepo.findById(id1).orElseThrow().getAmount())
                 .isEqualByComparingTo("1800.00");
     }
@@ -152,7 +133,6 @@ class PaymentRepoTest {
         Payment p = paymentRepo.findById(id1).orElseThrow();
         p.setAmount(new BigDecimal("2000.00"));
         paymentRepo.save(p);
-
         Payment updated = paymentRepo.findById(id1).orElseThrow();
         assertThat(updated.getId().getCustomerNumber()).isEqualTo(103);
         assertThat(updated.getId().getCheckNumber()).isEqualTo("TEST_CHK001");
@@ -218,9 +198,7 @@ class PaymentRepoTest {
     @Test
     void repo_findByDateBetween_shouldReturnPaymentsInRange() {
         List<Payment> result = paymentRepo.findByPaymentDateBetween(
-                LocalDate.of(2024, 1, 1),
-                LocalDate.of(2024, 2, 28)
-        );
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 28));
         assertThat(result.stream()
                 .anyMatch(p -> p.getId().getCheckNumber().equals("TEST_CHK001"))).isTrue();
         assertThat(result.stream()
@@ -230,9 +208,7 @@ class PaymentRepoTest {
     @Test
     void repo_findByDateBetween_shouldNotReturnOutsideRange() {
         List<Payment> result = paymentRepo.findByPaymentDateBetween(
-                LocalDate.of(2024, 1, 1),
-                LocalDate.of(2024, 2, 28)
-        );
+                LocalDate.of(2024, 1, 1), LocalDate.of(2024, 2, 28));
         assertThat(result.stream()
                 .noneMatch(p -> p.getId().getCheckNumber().equals("TEST_CHK003"))).isTrue();
     }
@@ -240,9 +216,32 @@ class PaymentRepoTest {
     @Test
     void repo_findByDateBetween_noMatch_shouldReturnEmpty() {
         List<Payment> result = paymentRepo.findByPaymentDateBetween(
-                LocalDate.of(2000, 1, 1),
-                LocalDate.of(2000, 12, 31)
-        );
+                LocalDate.of(2000, 1, 1), LocalDate.of(2000, 12, 31));
+        assertThat(result).isEmpty();
+    }
+
+    // --- findByCheckNumber ---
+
+    @Test
+    void repo_findByCheckNumber_shouldReturnMatch() {
+        List<Payment> result = paymentRepo
+                .findById_CheckNumberContainingIgnoreCase("TEST_CHK001");
+        assertThat(result.stream()
+                .anyMatch(p -> p.getId().getCheckNumber().equals("TEST_CHK001"))).isTrue();
+    }
+
+    @Test
+    void repo_findByCheckNumber_caseInsensitive_shouldWork() {
+        List<Payment> result = paymentRepo
+                .findById_CheckNumberContainingIgnoreCase("test_chk002");
+        assertThat(result.stream()
+                .anyMatch(p -> p.getId().getCheckNumber().equals("TEST_CHK002"))).isTrue();
+    }
+
+    @Test
+    void repo_findByCheckNumber_noMatch_shouldReturnEmpty() {
+        List<Payment> result = paymentRepo
+                .findById_CheckNumberContainingIgnoreCase("NONEXISTENT");
         assertThat(result).isEmpty();
     }
 }
