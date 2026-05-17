@@ -2,6 +2,7 @@ package com.project.cmb.service;
 
 import com.project.cmb.entity.Product;
 import com.project.cmb.entity.ProductLine;
+import com.project.cmb.projection.ProductListView;
 import com.project.cmb.repo.ProductLineRepo;
 import com.project.cmb.repo.ProductRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +30,7 @@ class ProductServiceTest {
 
     private Product p1, p2, p3;
     private ProductLine line1, line2;
+    private ProductListView view3;
 
     @BeforeEach
     void setup() {
@@ -60,9 +63,22 @@ class ProductServiceTest {
         p3.setProductName("1968 Ford Mustang");
         p3.setProductLine(line2);
         p3.setProductVendor("Autoart Studio Design");
-        p3.setQuantityInStock((short) 30);  // low stock
+        p3.setQuantityInStock((short) 30);
         p3.setBuyPrice(new BigDecimal("68.99"));
         p3.setMsrp(new BigDecimal("145.00"));
+
+        view3 = new ProductListView() {
+            public String getProductCode() { return "S12_1099"; }
+            public String getProductName() { return "1968 Ford Mustang"; }
+            public Short getQuantityInStock() { return (short) 30; }
+            public BigDecimal getBuyPrice() { return new BigDecimal("68.99"); }
+            public BigDecimal getMsrp() { return new BigDecimal("145.00"); }
+            public ProductLineInfo getProductLine() {
+                return new ProductLineInfo() {
+                    public String getProductLine() { return "Motorcycles"; }
+                };
+            }
+        };
     }
 
     @Test
@@ -100,10 +116,11 @@ class ProductServiceTest {
 
     @Test
     void getLowStockProducts_shouldReturnProductsBelowThreshold() {
+        List<ProductListView> lowStock = List.of(view3);
         when(productRepo.findByQuantityInStockLessThan((short) 50))
-                .thenReturn(List.of(p3));
+                .thenReturn(lowStock);
 
-        List<Product> result = productService.getLowStockProducts();
+        List<ProductListView> result = productService.getLowStockProducts();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getProductCode()).isEqualTo("S12_1099");
@@ -112,8 +129,9 @@ class ProductServiceTest {
 
     @Test
     void getLowStockProducts_noneBelow_shouldReturnEmpty() {
+        List<ProductListView> empty = Collections.emptyList();
         when(productRepo.findByQuantityInStockLessThan((short) 50))
-                .thenReturn(List.of());
+                .thenReturn(empty);
 
         assertThat(productService.getLowStockProducts()).isEmpty();
     }
