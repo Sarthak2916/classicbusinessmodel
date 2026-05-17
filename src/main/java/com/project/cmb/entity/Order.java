@@ -1,9 +1,6 @@
 package com.project.cmb.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,7 +33,7 @@ public class Order {
     @Column(name = "comments")
     private String comments;
 
-    @Column(name = "customerNumber")
-    private Integer customerNumber;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customerNumber")
+    private Customer customer;
 }
-
