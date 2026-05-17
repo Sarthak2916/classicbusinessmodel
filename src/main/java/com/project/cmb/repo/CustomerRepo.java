@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RepositoryRestResource(path = "customers")
-public interface CustomerRepo extends JpaRepository<Customer, Integer> {
+public interface  CustomerRepo extends JpaRepository<Customer, Integer> {
 
     Page<Customer> findByCustomerNameContainingIgnoreCase(String customerName, Pageable pageable);
     Page<Customer> findByPhoneContaining(String phone, Pageable pageable);
