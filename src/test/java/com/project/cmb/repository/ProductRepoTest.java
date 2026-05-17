@@ -2,6 +2,7 @@ package com.project.cmb.repository;
 
 import com.project.cmb.entity.Product;
 import com.project.cmb.entity.ProductLine;
+import com.project.cmb.projection.ProductListView;
 import com.project.cmb.repo.ProductLineRepo;
 import com.project.cmb.repo.ProductRepo;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,9 +13,9 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
-import java.util.List;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -177,7 +178,7 @@ class ProductRepoTest {
 
     @Test
     void repo_findByName_shouldReturnMatch() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductNameContainingIgnoreCase("classic", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
@@ -185,7 +186,7 @@ class ProductRepoTest {
 
     @Test
     void repo_findByName_caseInsensitive_shouldWork() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductNameContainingIgnoreCase("VINTAGE", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
@@ -193,14 +194,14 @@ class ProductRepoTest {
 
     @Test
     void repo_findByName_noMatch_shouldReturnEmpty() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductNameContainingIgnoreCase("xyzxyzxyz", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
     @Test
     void repo_findByProductLine_shouldReturnCorrectProducts() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductLine_ProductLine("Test Line A", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .allMatch(p -> p.getProductLine().getProductLine().equals("Test Line A"))).isTrue();
@@ -208,7 +209,7 @@ class ProductRepoTest {
 
     @Test
     void repo_findByProductLine_shouldNotReturnOtherLines() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductLine_ProductLine("Test Line B", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_003"))).isTrue();
@@ -218,14 +219,14 @@ class ProductRepoTest {
 
     @Test
     void repo_findByProductLine_noMatch_shouldReturnEmpty() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductLine_ProductLine("Nonexistent Line", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
     @Test
     void repo_findByVendor_shouldReturnMatch() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductVendorContainingIgnoreCase("vendor a", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
@@ -233,7 +234,7 @@ class ProductRepoTest {
 
     @Test
     void repo_findByVendor_caseInsensitive_shouldWork() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductVendorContainingIgnoreCase("VENDOR B", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
@@ -241,14 +242,14 @@ class ProductRepoTest {
 
     @Test
     void repo_findByVendor_noMatch_shouldReturnEmpty() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductVendorContainingIgnoreCase("xyzxyzxyz", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
     @Test
     void repo_findByProductCode_shouldReturnMatch() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductCodeContainingIgnoreCase("T_001", PageRequest.of(0, 5));
         assertThat(result.getContent().stream()
                 .anyMatch(p -> p.getProductCode().equals("T_001"))).isTrue();
@@ -256,35 +257,35 @@ class ProductRepoTest {
 
     @Test
     void repo_findByProductCode_partialMatch_shouldWork() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductCodeContainingIgnoreCase("T_", PageRequest.of(0, 10));
         assertThat(result.getContent().size()).isGreaterThanOrEqualTo(3);
     }
 
     @Test
     void repo_findByProductCode_noMatch_shouldReturnEmpty() {
-        Page<Product> result = productRepo
+        Page<ProductListView> result = productRepo
                 .findByProductCodeContainingIgnoreCase("ZZZZZZ", PageRequest.of(0, 5));
         assertThat(result.getTotalElements()).isEqualTo(0);
     }
 
     @Test
     void repo_findByLowStock_shouldReturnProductsBelowThreshold() {
-        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 60);
+        List<ProductListView> result = productRepo.findByQuantityInStockLessThan((short) 60);
         assertThat(result.stream()
                 .anyMatch(p -> p.getProductCode().equals("T_002"))).isTrue();
     }
 
     @Test
     void repo_findByLowStock_shouldNotReturnHighStockProducts() {
-        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 60);
+        List<ProductListView> result = productRepo.findByQuantityInStockLessThan((short) 60);
         assertThat(result.stream()
                 .noneMatch(p -> p.getProductCode().equals("T_003"))).isTrue();
     }
 
     @Test
     void repo_findByLowStock_noneBelow_shouldReturnEmpty() {
-        List<Product> result = productRepo.findByQuantityInStockLessThan((short) 1);
+        List<ProductListView> result = productRepo.findByQuantityInStockLessThan((short) 1);
         assertThat(result.stream()
                 .noneMatch(p -> p.getProductCode().startsWith("T_"))).isTrue();
     }

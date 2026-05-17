@@ -1,6 +1,6 @@
 package com.project.cmb.service;
 
-import com.project.cmb.entity.Product;
+import com.project.cmb.projection.ProductListView;
 import com.project.cmb.repo.ProductLineRepo;
 import com.project.cmb.repo.ProductRepo;
 import lombok.AllArgsConstructor;
@@ -34,7 +34,7 @@ public class ProductService {
                 ));
     }
 
-    public List<Product> getLowStockProducts() {
+    public List<ProductListView> getLowStockProducts() {
         return productRepo.findByQuantityInStockLessThan((short) 50);
     }
 }
